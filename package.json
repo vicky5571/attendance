@@ -6,8 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --experimental-strip-types --test tests/**/*.test.ts",
+    "test:fast": "node --experimental-strip-types --test"
   },
+  "type": "module",
   "dependencies": {
     "next": "16.4.0",
     "react": "19.3.0",
