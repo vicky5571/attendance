@@ -69,7 +69,7 @@ Test:
 
 ### Track A: [BACKEND / branch: vicky]
 
-- [ ] **Task A1: SQLite Database Engine & Repository Layer**
+- [x] **Task A1: SQLite Database Engine & Repository Layer**
   - **Step 1: Write the failing test** (`tests/db.test.ts`)
     - Verify schema initialization on in-memory SQLite database.
     - Test `office_config` singleton creation and retrieval.
@@ -81,7 +81,7 @@ Test:
     - Create `src/lib/db/repo.ts` with typed methods.
   - **Step 3: Run verification command**
     - `npm run test:fast tests/db.test.ts`
-    - Verify 0 failures in < 150ms.
+    - Verify 0 failures in < 150ms. (Result: 9/9 passing in 24ms)
 
 - [ ] **Task A2: Database Seeder Script**
   - **Step 1: Write the failing test** (verify seed data can be loaded idempotently into database)
