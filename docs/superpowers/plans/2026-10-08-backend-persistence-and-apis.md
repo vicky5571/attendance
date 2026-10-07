@@ -83,12 +83,12 @@ Test:
     - `npm run test:fast tests/db.test.ts`
     - Verify 0 failures in < 150ms. (Result: 9/9 passing in 24ms)
 
-- [ ] **Task A2: Database Seeder Script**
+- [x] **Task A2: Database Seeder Script**
   - **Step 1: Write the failing test** (verify seed data can be loaded idempotently into database)
   - **Step 2: Implement minimum passing code**
     - Create `src/lib/db/seed.ts` inserting default office config (Indosat HQ lat/lng, 50m radius) and sample interns.
   - **Step 3: Run verification command**
-    - Run seed function test and verify records present.
+    - Run seed function test and verify records present. (Result: 1/1 passing in 4ms, CLI npm run db:seed verified)
 
 - [ ] **Task A3: Config & Intern REST APIs**
   - **Step 1: Write the failing test** (`tests/api-master.test.ts`)

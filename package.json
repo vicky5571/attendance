@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --experimental-strip-types --test tests/**/*.test.ts",
-    "test:fast": "node --experimental-strip-types --test"
+    "test:fast": "node --experimental-strip-types --test",
+    "db:seed": "node --experimental-strip-types src/lib/db/seed.ts"
   },
   "type": "module",
   "dependencies": {
