@@ -100,7 +100,7 @@ Test:
   - **Step 3: Run verification command**
     - `npm run test:fast tests/api-master.test.ts` (Result: 5/5 passing in 47ms)
 
-- [ ] **Task A4: Attendance Check-In API with Server-Side Geofencing**
+- [x] **Task A4: Attendance Check-In API with Server-Side Geofencing**
   - **Step 1: Write the failing test** (`tests/api-checkin.test.ts`)
     - Rejects request when coordinates are outside office radius (>50m) with 403 Forbidden.
     - Accepts valid coordinates (<=50m), evaluates punctuality remarks, and returns 201 Created.
@@ -108,7 +108,7 @@ Test:
   - **Step 2: Implement minimum passing code**
     - Implement `src/app/api/attendance/check-in/route.ts` integrating `src/lib/geo.ts` and `src/lib/db/repo.ts`.
   - **Step 3: Run verification command**
-    - `npm run test:fast tests/api-checkin.test.ts`
+    - `npm run test:fast tests/api-checkin.test.ts` (Result: 5/5 passing in 47ms)
 
 - [ ] **Task A5: Attendance Check-Out & Status APIs**
   - **Step 1: Write the failing test** (`tests/api-checkout.test.ts`)

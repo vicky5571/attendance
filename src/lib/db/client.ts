@@ -20,3 +20,11 @@ export function getDatabase(): DatabaseSync {
   }
   return runtimeDb;
 }
+
+/**
+ * Sets or resets the runtime database instance (primarily for testing).
+ */
+export function setDatabase(db: DatabaseSync | null): void {
+  runtimeDb = db;
+}
+

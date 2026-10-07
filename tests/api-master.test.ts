@@ -2,15 +2,15 @@ import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { GET as getConfig, PUT as putConfig } from '../src/app/api/config/route.ts';
 import { GET as getInterns, POST as postInterns } from '../src/app/api/interns/route.ts';
-import { getDatabase } from '../src/lib/db/client.ts';
+import { createDatabase, setDatabase } from '../src/lib/db/client.ts';
 import { initSchema } from '../src/lib/db/schema.ts';
 import { setOfficeConfig } from '../src/lib/db/repo.ts';
 import type { OfficeConfig, InternProfile } from '../src/types/index.ts';
 
 describe('Config & Intern REST APIs', () => {
   beforeEach(() => {
-    process.env.DATABASE_PATH = ':memory:';
-    const db = getDatabase();
+    const db = createDatabase(':memory:');
+    setDatabase(db);
     initSchema(db);
 
     const testConfig: OfficeConfig = {
