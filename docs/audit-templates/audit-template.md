@@ -31,7 +31,12 @@ div.flex.h-screen.w-screen.overflow-hidden
 
 ---
 
-## 3. Remediation Roadmap
+## 3. Remediation Roadmap (Strictly Differentiated by Branch)
 
-- **Phase 1: Foundation & Data Invariants** (`YYYY-MM-DD-phase-1-*.md`)
-- **Phase 2: UI/UX & Layout Stabilization** (`YYYY-MM-DD-phase-2-*.md`)
+### Track A: Backend Remediation (`branch: vicky`)
+- **Phase 1A: Database, Schema & APIs** (`YYYY-MM-DD-phase-1a-backend-*.md`)
+- **Phase 2A: Background Automation & Notifications** (`YYYY-MM-DD-phase-2a-backend-*.md`)
+
+### Track B: Frontend Remediation (`branch: zacky`)
+- **Phase 1B: UI/UX & Responsive Layout** (`YYYY-MM-DD-phase-1b-frontend-*.md`)
+- **Phase 2B: PWA Capabilities & Client Geolocation** (`YYYY-MM-DD-phase-2b-frontend-*.md`)

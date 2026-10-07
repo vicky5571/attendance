@@ -70,12 +70,16 @@ When active branch is `vicky` (or any `feat/backend-*` branch):
 ---
 
 ## Workflow & Superpowers Execution Protocol
-1. **Audit-First for Major Refactors**: Before modifying complex modules, produce a structured diagnostic audit (`docs/audit-<subsystem>.md`).
-2. **Plan-First for Multi-Step Tasks**: Write an implementation plan in `docs/superpowers/plans/YYYY-MM-DD-<name>.md` with checkbox (`- [ ]`) tracking before touching code.
-3. **Bugs & Regressions**: Hypothesize and isolate root causes before proposing fixes.
-4. **Execution Discipline**: Write the failing test first, implement minimal passing code, and eliminate over-engineering.
-5. **Evidence Before Assertions**: Never claim completion without test execution proof. Run targeted test commands (`npm run test:fast <path-to-test>`) and verify 0 failures.
-6. **Proactive Code Smells Flagging**: Reject "quick hacks", magic strings, bypasses of schema validations, or unhandled promise rejections.
+1. **Mandatory Frontend vs Backend Task Bifurcation**: All architectural audits, task breakdowns, and implementation plans MUST strictly differentiate, separate, and group items into:
+   - **Frontend Track (`[FRONTEND / branch: zacky]`)**: UI/UX components, client-side Geolocation & radar feedback, PWA service worker/manifest, client state, and responsive styling.
+   - **Backend Track (`[BACKEND / branch: vicky]`)**: Database schema & migrations, REST API routes, server-side Haversine geofence verification, WhatsApp Baileys daemon, Nodemailer SMTP, and cron recap dispatchers.
+   Never create mixed, untagged task lists. Every task in audits and plans must clearly state whether it belongs to Front-End (`zacky`) or Back-End (`vicky`).
+2. **Audit-First for Major Refactors**: Before modifying complex modules, produce a structured diagnostic audit (`docs/audit-<subsystem>.md`) with distinct Front-End and Back-End finding sections.
+3. **Plan-First for Multi-Step Tasks**: Write an implementation plan in `docs/superpowers/plans/YYYY-MM-DD-<name>.md` with checkbox (`- [ ]`) tracking before touching code, organized cleanly into separate Frontend and Backend execution tracks.
+4. **Bugs & Regressions**: Hypothesize and isolate root causes before proposing fixes, explicitly identifying whether the defect lives in the client layer (`zacky`) or server layer (`vicky`).
+5. **Execution Discipline**: Write the failing test first, implement minimal passing code, and eliminate over-engineering.
+6. **Evidence Before Assertions**: Never claim completion without test execution proof. Run targeted test commands (`npm run test:fast <path-to-test>`) and verify 0 failures.
+7. **Proactive Code Smells Flagging**: Reject "quick hacks", magic strings, bypasses of schema validations, or unhandled promise rejections.
 
 ---
 
