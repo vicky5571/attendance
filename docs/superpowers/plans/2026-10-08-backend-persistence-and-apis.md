@@ -110,7 +110,7 @@ Test:
   - **Step 3: Run verification command**
     - `npm run test:fast tests/api-checkin.test.ts` (Result: 5/5 passing in 47ms)
 
-- [ ] **Task A5: Attendance Check-Out & Status APIs**
+- [x] **Task A5: Attendance Check-Out & Status APIs**
   - **Step 1: Write the failing test** (`tests/api-checkout.test.ts`)
     - Test `POST /api/attendance/check-out` updating existing check-in with exit timestamp and remarks.
     - Test check-out rejection if check-in has not occurred yet.
@@ -119,13 +119,14 @@ Test:
     - Implement `src/app/api/attendance/check-out/route.ts`.
     - Implement `src/app/api/attendance/status/route.ts`.
   - **Step 3: Run verification command**
-    - `npm run test:fast tests/api-checkout.test.ts`
+    - `npm run test:fast tests/api-checkout.test.ts` (Result: 5/5 passing in 50ms)
 
-- [ ] **Task A6: Full Backend Test Suite Verification**
+- [x] **Task A6: Full Backend Test Suite Verification**
   - **Step 1: Run complete test suite**
     - `npm test`
   - **Step 2: Verify zero regressions and check latency target (<500ms total)**
-  - **Step 3: Paste terminal output proof into summary artifact**
+    - Total: 32 tests passing across 14 suites, 0 failures.
+  - **Step 3: Paste terminal proof into summary artifact**
 
 ---
 
