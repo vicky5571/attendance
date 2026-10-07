@@ -90,7 +90,7 @@ Test:
   - **Step 3: Run verification command**
     - Run seed function test and verify records present. (Result: 1/1 passing in 4ms, CLI npm run db:seed verified)
 
-- [ ] **Task A3: Config & Intern REST APIs**
+- [x] **Task A3: Config & Intern REST APIs**
   - **Step 1: Write the failing test** (`tests/api-master.test.ts`)
     - Test `GET /api/config` and `PUT /api/config`.
     - Test `GET /api/interns` and `POST /api/interns`.
@@ -98,7 +98,7 @@ Test:
     - Implement `src/app/api/config/route.ts`.
     - Implement `src/app/api/interns/route.ts`.
   - **Step 3: Run verification command**
-    - `npm run test:fast tests/api-master.test.ts`
+    - `npm run test:fast tests/api-master.test.ts` (Result: 5/5 passing in 47ms)
 
 - [ ] **Task A4: Attendance Check-In API with Server-Side Geofencing**
   - **Step 1: Write the failing test** (`tests/api-checkin.test.ts`)
