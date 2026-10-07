@@ -63,7 +63,7 @@ When active branch is `vicky` (or any `feat/backend-*` branch):
 ## Architecture & Codebase Invariants
 - **Tech Stack**: Node.js v26.8.1 (ESM), Next.js 16.4.0 (App Router, React 19.3.0), Tailwind CSS v4, SQLite (Embedded Storage), Node.js Native Test Runner (`node:test`).
 - **Single Source of Truth (SSOT)**: All core domain entities, interfaces, and schemas MUST be imported from the central types directory (`src/types/index.ts`). Reject duplicate inline interfaces across components or handlers.
-- **Strangler Pattern on God Files**: NEVER dump new state, actions, or views directly into coordinator or root view files. Keep coordinator files under ~250 lines by extracting business logic into dedicated modular slices/helpers (`src/lib/`) and UI into atomic subcomponents (`src/components/`).
+- **Strangler Pattern on God Files**: NEVER dump new state, actions, or views directly into coordinator or root view files. Monolithic files exceeding >300 lines of mixed UI, state, and API logic are strictly classified as God Files. Keep coordinator files under ~250 lines by extracting business logic into dedicated modular slices/helpers (`src/lib/`) and UI into atomic subcomponents (`src/components/`).
 - **State & Persistence Discipline**: UI mutations must update client state immediately with resilient offline/local memory fallback alongside remote database/API synchronization.
 - **Tenant & Entity Scoping**: Strict boundary enforcement between Global Master Data (unscoped, shared office config) and Operational Work Items (intern attendance records, division groups).
 
@@ -75,11 +75,36 @@ When active branch is `vicky` (or any `feat/backend-*` branch):
    - **Backend Track (`[BACKEND / branch: vicky]`)**: Database schema & migrations, REST API routes, server-side Haversine geofence verification, WhatsApp Baileys daemon, Nodemailer SMTP, and cron recap dispatchers.
    Never create mixed, untagged task lists. Every task in audits and plans must clearly state whether it belongs to Front-End (`zacky`) or Back-End (`vicky`).
 2. **Audit-First for Major Refactors**: Before modifying complex modules, produce a structured diagnostic audit (`docs/audit-<subsystem>.md`) with distinct Front-End and Back-End finding sections.
+   - **Defect Priority Scale (P0–P3)**:
+     - **P0 (Architecture / Resilience)**: Critical structural flaws, data integrity risks, operational collapse.
+     - **P1 (Domain Integrity / Data)**: Missing state, business logic errors, unvalidated models.
+     - **P2 (Performance / Layout Trap)**: Viewport traps (`h-screen` / `overflow` traps on iOS Safari), rendering penalties, memory leaks.
+     - **P3 (Code Quality / DRY)**: Duplicate logic, ad-hoc helpers, maintainability taxes.
+   - **Viewport & Layout Cascade Trace**: For UI modules, the audit must visualize the cascade hierarchy to catch scroll/viewport traps:
+     ```text
+     div.flex.h-screen.w-screen.overflow-hidden
+     └─ main.flex-1.flex.flex-col.h-full.overflow-hidden
+        └─ div.flex-1.overflow-hidden.relative
+           └─ div.flex-1.overflow-auto.p-6    🔴 [Identified Break/Trap]
+     ```
 3. **Plan-First for Multi-Step Tasks**: Write an implementation plan in `docs/superpowers/plans/YYYY-MM-DD-<name>.md` with checkbox (`- [ ]`) tracking before touching code, organized cleanly into separate Frontend and Backend execution tracks.
+   - **Strict 3-Step Task Execution Loop**: Every granular task checkbox in a plan must enforce:
+     - `Step 1: Write the failing test`
+     - `Step 2: Implement minimum passing code`
+     - `Step 3: Run verification command (npm run test:fast <path>) and paste terminal proof`
 4. **Bugs & Regressions**: Hypothesize and isolate root causes before proposing fixes, explicitly identifying whether the defect lives in the client layer (`zacky`) or server layer (`vicky`).
 5. **Execution Discipline**: Write the failing test first, implement minimal passing code, and eliminate over-engineering.
 6. **Evidence Before Assertions**: Never claim completion without test execution proof. Run targeted test commands (`npm run test:fast <path-to-test>`) and verify 0 failures.
 7. **Proactive Code Smells Flagging**: Reject "quick hacks", magic strings, bypasses of schema validations, or unhandled promise rejections.
+
+---
+
+## 📚 Documentation Hierarchy & Template References
+All architectural initiatives must adhere to the established templates:
+- **Architecture Invariants**: [`docs/architecture-system-invariants.md`](docs/architecture-system-invariants.md)
+- **Diagnostic Audit Template**: [`docs/audit-templates/audit-template.md`](docs/audit-templates/audit-template.md)
+- **Implementation Plan Guide & Template**: [`docs/superpowers/plans/README.md`](docs/superpowers/plans/README.md)
+- **Active Technical & Feature Spec**: [`docs/superpowers/specs/attendance-pwa-spec.md`](docs/superpowers/specs/attendance-pwa-spec.md) (Quick pointer: [`SPEC.md`](SPEC.md))
 
 ---
 
