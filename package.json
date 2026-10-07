@@ -13,13 +13,18 @@
   },
   "type": "module",
   "dependencies": {
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
     "next": "16.4.0",
+    "node-cron": "^4.6.0",
+    "nodemailer": "^10.0.16",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
+    "@types/node-cron": "^3.0.11",
+    "@types/nodemailer": "^8.0.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

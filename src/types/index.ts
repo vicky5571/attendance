@@ -45,3 +45,36 @@ export interface OfficeConfig {
   waGroupInternsJid?: string;
   waGroupMentorsJid?: string;
 }
+
+export interface RecapInternItem {
+  internId: string;
+  namaLengkap: string;
+  divisi: string;
+  namaMentor: string;
+  emailMentor: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  status: AttendanceStatus;
+  remarks?: string;
+}
+
+export interface DivisionBreakdown {
+  division: string;
+  totalInterns: number;
+  present: number;
+  absent: number;
+  late: number;
+}
+
+export interface DailyRecapSummary {
+  date: string;
+  totalActive: number;
+  presentCount: number;
+  onTimeCount: number;
+  lateCount: number;
+  earlyDepartureCount: number;
+  absentCount: number;
+  divisionBreakdowns: DivisionBreakdown[];
+  items: RecapInternItem[];
+}
+
