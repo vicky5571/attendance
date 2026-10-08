@@ -1,6 +1,7 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
+import { formatDistanceFeedback } from '@/lib/client-geo';
 
 interface RadarCardProps {
   distance: number | null;
@@ -21,6 +22,8 @@ export function RadarCard({
   onSimulate,
   onRealGps,
 }: RadarCardProps) {
+  const feedback = formatDistanceFeedback(distance, maxRadius);
+
   return (
     <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col items-center">
       <div className="w-full flex items-center justify-between mb-2">
@@ -94,11 +97,7 @@ export function RadarCard({
         }`}
       >
         <span>{isWithinRadius ? '✅' : '⚠️'}</span>
-        <span>
-          {isWithinRadius
-            ? 'Posisi Anda valid untuk melakukan absensi'
-            : `Anda berada di luar batas geofence (${maxRadius}m)`}
-        </span>
+        <span>{feedback.message}</span>
       </div>
     </div>
   );
