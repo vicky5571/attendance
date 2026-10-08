@@ -1,21 +1,10 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
-
-export interface Intern {
-  id: string;
-  namaLengkap: string;
-  divisi: string;
-  namaMentor: string;
-  emailMentor: string;
-  universitas: string;
-  jurusan: string;
-  periodeMagangSelesai: string;
-  status: string;
-}
+import type { InternProfile } from '@/types';
 
 interface ProfileCardProps {
-  interns: Intern[];
+  interns: InternProfile[];
   selectedId: string;
   onSelect: (id: string) => void;
 }
@@ -31,8 +20,14 @@ export function ProfileCard({ interns, selectedId, onSelect }: ProfileCardProps)
           <span className="px-3 py-1 rounded-full bg-[#ED0278]/10 text-[#ED0278] text-[10px] font-black tracking-wide uppercase">
             Peserta Magang IOH
           </span>
-          <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-            ● Active
+          <span
+            className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+              active?.status === 'ACTIVE'
+                ? 'text-emerald-700 bg-emerald-50 border border-emerald-200'
+                : 'text-slate-500 bg-slate-100 border border-slate-200'
+            }`}
+          >
+            ● {active?.status === 'ACTIVE' ? 'Active' : 'Completed'}
           </span>
         </div>
 

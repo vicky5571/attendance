@@ -1,25 +1,23 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
-import { ProfileCard, Intern } from '@/components/ProfileCard';
+import { ProfileCard } from '@/components/ProfileCard';
 import { RadarCard } from '@/components/RadarCard';
 import { AttendanceActions } from '@/components/AttendanceActions';
 import { WhatsAppModal } from '@/components/WhatsAppModal';
-
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 6371e3;
-  const p1 = (lat1 * Math.PI) / 180;
-  const p2 = (lat2 * Math.PI) / 180;
-  const dp = ((lat2 - lat1) * Math.PI) / 180;
-  const dl = ((lon2 - lon1) * Math.PI) / 180;
-  const a = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
-  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-}
+import { calculateDistance, isWithinRadius } from '@/lib/client-geo';
+import {
+  saveAttendanceCache,
+  getAttendanceCache,
+  saveSelectedInternId,
+  getSelectedInternId,
+} from '@/lib/client-storage';
+import type { OfficeConfig, InternProfile } from '@/types';
 
 export default function AttendancePage() {
-  const [config, setConfig] = useState<any>(null);
-  const [interns, setInterns] = useState<Intern[]>([]);
+  const [config, setConfig] = useState<OfficeConfig | null>(null);
+  const [interns, setInterns] = useState<InternProfile[]>([]);
   const [selectedId, setSelectedId] = useState('intern-sarah');
   const [wa, setWa] = useState<{ status: 'disconnected' | 'connecting' | 'open'; qr: string | null }>({
     status: 'disconnected',
@@ -35,14 +33,23 @@ export default function AttendancePage() {
 
   // Action state
   const [actionLoading, setActionLoading] = useState(false);
-  const [records, setRecords] = useState<{ in?: string; out?: string }>({});
+  const [records, setRecords] = useState<{ in?: string; out?: string; remarks?: string }>({});
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+
+  const todayStr = new Date().toISOString().split('T')[0];
 
   const notify = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
   };
 
+  // Restore remembered intern on initial mount
+  useEffect(() => {
+    const saved = getSelectedInternId('intern-sarah');
+    if (saved) setSelectedId(saved);
+  }, []);
+
+  // Fetch initial config & intern master data
   useEffect(() => {
     Promise.all([
       fetch('/api/config').then((r) => r.json()),
@@ -57,6 +64,40 @@ export default function AttendancePage() {
     });
   }, []);
 
+  // Sync attendance state on intern change (Offline-first: cache -> remote API)
+  useEffect(() => {
+    if (!selectedId) return;
+
+    // 1. Instant optimistic restore from local storage cache
+    const cached = getAttendanceCache(selectedId, todayStr);
+    if (cached) {
+      setRecords({ in: cached.in, out: cached.out, remarks: cached.remarks });
+    } else {
+      setRecords({});
+    }
+
+    // 2. Query ground truth from server API
+    fetch(`/api/attendance/status?internId=${encodeURIComponent(selectedId)}&date=${todayStr}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.record) {
+          const inTime = data.record.checkInTime ? data.record.checkInTime.slice(0, 5) : undefined;
+          const outTime = data.record.checkOutTime ? data.record.checkOutTime.slice(0, 5) : undefined;
+          const newRec = { in: inTime, out: outTime, remarks: data.record.remarks };
+          setRecords(newRec);
+          saveAttendanceCache(selectedId, todayStr, {
+            ...newRec,
+            status: data.record.status,
+          });
+        } else if (!cached) {
+          setRecords({});
+        }
+      })
+      .catch(() => {
+        // Offline fallback: retain local cache silently
+      });
+  }, [selectedId, todayStr]);
+
   useEffect(() => {
     const pollWa = () =>
       fetch('/api/whatsapp/status')
@@ -67,6 +108,14 @@ export default function AttendancePage() {
     const interval = setInterval(pollWa, 4000);
     return () => clearInterval(interval);
   }, []);
+
+  const maxRadius = config?.maxRadiusMeters || 50;
+  const isWithin = isWithinRadius(distance, maxRadius);
+
+  const handleSelectIntern = (id: string) => {
+    setSelectedId(id);
+    saveSelectedInternId(id);
+  };
 
   const handleRealGps = () => {
     if (!navigator.geolocation) return notify('Geolocation tidak didukung browser', 'error');
@@ -85,6 +134,11 @@ export default function AttendancePage() {
       (err) => {
         setGpsLoading(false);
         notify(`Gagal GPS: ${err.message}`, 'error');
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
       }
     );
   };
@@ -99,6 +153,8 @@ export default function AttendancePage() {
 
   const submitAttendance = async (type: 'check-in' | 'check-out') => {
     if (!coords) return notify('Koordinat GPS belum siap', 'error');
+    if (!isWithin) return notify(`Di luar radius batas geofence (${maxRadius}m)`, 'error');
+
     setActionLoading(true);
     try {
       const res = await fetch(`/api/attendance/${type}`, {
@@ -109,7 +165,12 @@ export default function AttendancePage() {
       const data = await res.json();
       if (res.ok) {
         const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-        setRecords((prev) => (type === 'check-in' ? { ...prev, in: now } : { ...prev, out: now }));
+        const serverRemarks = data.record?.remarks || (type === 'check-in' ? 'Tepat Waktu' : records.remarks);
+        const updated = type === 'check-in'
+          ? { ...records, in: now, remarks: serverRemarks }
+          : { ...records, out: now, remarks: serverRemarks };
+        setRecords(updated);
+        saveAttendanceCache(selectedId, todayStr, updated);
         notify(`Berhasil ${type === 'check-in' ? 'Check-In' : 'Check-Out'}!`, 'success');
       } else {
         notify(data.error || 'Gagal memproses presensi', 'error');
@@ -120,7 +181,6 @@ export default function AttendancePage() {
     setActionLoading(false);
   };
 
-  const isWithin = distance !== null && distance <= (config?.maxRadiusMeters || 50);
   const activeIntern = interns.find((i) => i.id === selectedId) || interns[0];
 
   return (
@@ -147,7 +207,7 @@ export default function AttendancePage() {
           onOpenWaModal={() => setIsWaModalOpen(true)}
         />
 
-        <ProfileCard interns={interns} selectedId={selectedId} onSelect={setSelectedId} />
+        <ProfileCard interns={interns} selectedId={selectedId} onSelect={handleSelectIntern} />
 
         <RadarCard
           distance={distance}
@@ -164,6 +224,9 @@ export default function AttendancePage() {
           loading={actionLoading}
           checkInTime={records.in}
           checkOutTime={records.out}
+          savedRemarks={records.remarks}
+          workStartTime={config?.workStartTime}
+          workEndTime={config?.workEndTime}
           onCheckIn={() => submitAttendance('check-in')}
           onCheckOut={() => submitAttendance('check-out')}
         />
