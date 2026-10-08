@@ -1,4 +1,4 @@
-import type { Coordinates } from '../types/index.ts';
+import type { Coordinates, OfficeLocation } from '../types/index.ts';
 
 const EARTH_RADIUS_METERS = 6371000;
 
@@ -35,6 +35,27 @@ export function isWithinGeofence(
 ): boolean {
   const distance = calculateDistanceInMeters(current, target);
   return distance <= maxRadiusMeters;
+}
+
+/**
+ * Matches coordinates against all active office locations.
+ * Returns the matched location and distance, or null if outside all locations.
+ */
+export function findMatchingLocation(
+  coords: Coordinates,
+  locations: OfficeLocation[]
+): { location: OfficeLocation; distanceMeters: number } | null {
+  for (const loc of locations) {
+    if (!loc.isActive) continue;
+    const distance = calculateDistanceInMeters(coords, {
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+    });
+    if (distance <= loc.maxRadiusMeters) {
+      return { location: loc, distanceMeters: distance };
+    }
+  }
+  return null;
 }
 
 /**

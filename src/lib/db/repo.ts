@@ -29,6 +29,7 @@ interface InternRow {
   jurusan: string;
   periode_magang_selesai: string;
   status: 'ACTIVE' | 'COMPLETED';
+  pin_hash?: string | null;
 }
 
 interface AttendanceRow {
@@ -44,6 +45,8 @@ interface AttendanceRow {
   distance_in_meters: number | null;
   status: AttendanceRecord['status'];
   remarks: string | null;
+  location_id: string | null;
+  photo_url: string | null;
 }
 
 function mapOfficeConfigRow(row: OfficeConfigRow): OfficeConfig {
@@ -65,7 +68,7 @@ function mapOfficeConfigRow(row: OfficeConfigRow): OfficeConfig {
 }
 
 function mapInternRow(row: InternRow): InternProfile {
-  return {
+  const profile: InternProfile = {
     id: row.id,
     namaLengkap: row.nama_lengkap,
     divisi: row.divisi,
@@ -76,6 +79,8 @@ function mapInternRow(row: InternRow): InternProfile {
     periodeMagangSelesai: row.periode_magang_selesai,
     status: row.status,
   };
+  if (row.pin_hash) profile.pinHash = row.pin_hash;
+  return profile;
 }
 
 function mapAttendanceRow(row: AttendanceRow): AttendanceRecord {
@@ -95,6 +100,8 @@ function mapAttendanceRow(row: AttendanceRow): AttendanceRecord {
   }
   if (row.distance_in_meters !== null) record.distanceInMeters = row.distance_in_meters;
   if (row.remarks) record.remarks = row.remarks;
+  if (row.location_id) record.locationId = row.location_id;
+  if (row.photo_url) record.photoUrl = row.photo_url;
 
   return record;
 }
@@ -146,8 +153,8 @@ export function createIntern(db: DatabaseSync, intern: InternProfile): void {
   const stmt = db.prepare(`
     INSERT INTO interns (
       id, nama_lengkap, divisi, nama_mentor, email_mentor,
-      universitas, jurusan, periode_magang_selesai, status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      universitas, jurusan, periode_magang_selesai, status, pin_hash
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   stmt.run(
     intern.id,
@@ -158,7 +165,8 @@ export function createIntern(db: DatabaseSync, intern: InternProfile): void {
     intern.universitas,
     intern.jurusan,
     intern.periodeMagangSelesai,
-    intern.status
+    intern.status,
+    intern.pinHash || null
   );
 }
 
@@ -188,8 +196,8 @@ export function recordCheckIn(db: DatabaseSync, record: AttendanceRecord): void 
     INSERT INTO attendance_logs (
       id, intern_id, date, check_in_time, check_out_time,
       check_in_lat, check_in_lng, check_out_lat, check_out_lng,
-      distance_in_meters, status, remarks
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      distance_in_meters, status, remarks, location_id, photo_url
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   stmt.run(
     record.id,
@@ -203,7 +211,9 @@ export function recordCheckIn(db: DatabaseSync, record: AttendanceRecord): void 
     record.checkOutCoords?.longitude ?? null,
     record.distanceInMeters ?? null,
     record.status,
-    record.remarks || null
+    record.remarks || null,
+    record.locationId || null,
+    record.photoUrl || null
   );
 }
 

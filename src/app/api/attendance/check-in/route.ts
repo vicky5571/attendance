@@ -8,7 +8,10 @@ import {
 import {
   calculateDistanceInMeters,
   evaluateAttendanceRemarks,
+  findMatchingLocation,
 } from '../../../../lib/geo.ts';
+import { verifyPin } from '../../../../lib/auth.ts';
+import { listOfficeLocations } from '../../../../lib/db/locations-repo.ts';
 import type { AttendanceRecord } from '../../../../types/index.ts';
 
 interface CheckInPayload {
@@ -16,6 +19,9 @@ interface CheckInPayload {
   latitude: number;
   longitude: number;
   timestamp?: string; // Optional ISO string e.g. "2026-10-08T08:15:00"
+  pin?: string;
+  locationId?: string;
+  photoUrl?: string;
 }
 
 export async function POST(request: Request) {
@@ -42,6 +48,16 @@ export async function POST(request: Request) {
         { error: `Intern not found with ID: ${body.internId}` },
         { status: 404 }
       );
+    }
+
+    // 1b. Anti-Proxy PIN Verification Guard
+    if (intern.pinHash) {
+      if (!body.pin || !verifyPin(body.pin, intern.pinHash)) {
+        return Response.json(
+          { error: 'PIN autentikasi tidak valid atau belum diisi' },
+          { status: 401 }
+        );
+      }
     }
 
     // 2. Resolve date and time
@@ -73,19 +89,41 @@ export async function POST(request: Request) {
     }
 
     // 5. Server-side anti-spoofing distance calculation
-    const distance = calculateDistanceInMeters(
-      { latitude: body.latitude, longitude: body.longitude },
-      { latitude: config.targetLatitude, longitude: config.targetLongitude }
-    );
+    const activeLocations = listOfficeLocations(db, true);
+    let distance = 0;
+    let matchedLocationId: string | undefined = undefined;
 
-    if (distance > config.maxRadiusMeters) {
-      return Response.json(
-        {
-          error: `Outside permitted office geofence radius. Distance: ${distance}m (Max: ${config.maxRadiusMeters}m)`,
-          distanceInMeters: distance,
-        },
-        { status: 403 }
+    if (activeLocations.length > 0) {
+      const match = findMatchingLocation(
+        { latitude: body.latitude, longitude: body.longitude },
+        activeLocations
       );
+      if (!match) {
+        return Response.json(
+          {
+            error: 'Di luar radius seluruh kantor atau site kerja terdaftar',
+            outsideAllLocations: true,
+          },
+          { status: 403 }
+        );
+      }
+      distance = match.distanceMeters;
+      matchedLocationId = match.location.id;
+    } else {
+      distance = calculateDistanceInMeters(
+        { latitude: body.latitude, longitude: body.longitude },
+        { latitude: config.targetLatitude, longitude: config.targetLongitude }
+      );
+
+      if (distance > config.maxRadiusMeters) {
+        return Response.json(
+          {
+            error: `Outside permitted office geofence radius. Distance: ${distance}m (Max: ${config.maxRadiusMeters}m)`,
+            distanceInMeters: distance,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     // 6. Evaluate schedule remarks
@@ -100,6 +138,8 @@ export async function POST(request: Request) {
       checkInTime: timeStr,
       checkInCoords: { latitude: body.latitude, longitude: body.longitude },
       distanceInMeters: distance,
+      locationId: matchedLocationId || body.locationId,
+      photoUrl: body.photoUrl,
       status: remarkEval.isViolated ? 'LATE' : 'ON_TIME',
       remarks: remarkEval.remarks,
     };
