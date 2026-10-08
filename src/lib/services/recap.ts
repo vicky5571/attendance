@@ -1,23 +1,31 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { listInterns, listAttendanceByDate } from '../db/repo.ts';
+import { listAttendanceRequests } from '../db/requests-repo.ts';
 import type {
   DailyRecapSummary,
   RecapInternItem,
   DivisionBreakdown,
   AttendanceRecord,
+  AttendanceRequest,
 } from '../../types/index.ts';
 
 /**
  * Aggregates attendance records, identifies absentees among active interns,
- * and compiles division-level punctuality metrics for a given date.
+ * integrates approved leave requests, and compiles division-level metrics.
  */
 export function aggregateDailyRecap(db: DatabaseSync, date: string): DailyRecapSummary {
   const activeInterns = listInterns(db, 'ACTIVE');
   const logs = listAttendanceByDate(db, date);
+  const approvedRequests = listAttendanceRequests(db, { date, status: 'APPROVED' });
 
   const logMap = new Map<string, AttendanceRecord>();
   for (const log of logs) {
     logMap.set(log.internId, log);
+  }
+
+  const reqMap = new Map<string, AttendanceRequest>();
+  for (const req of approvedRequests) {
+    reqMap.set(req.internId, req);
   }
 
   const items: RecapInternItem[] = [];
@@ -25,10 +33,15 @@ export function aggregateDailyRecap(db: DatabaseSync, date: string): DailyRecapS
   let onTimeCount = 0;
   let lateCount = 0;
   let earlyDepartureCount = 0;
+  let wfhCount = 0;
+  let sickCount = 0;
+  let permitCount = 0;
   let absentCount = 0;
 
   for (const intern of activeInterns) {
     const log = logMap.get(intern.id);
+    const req = reqMap.get(intern.id);
+
     if (log && log.checkInTime) {
       presentCount++;
       if (log.status === 'ON_TIME') onTimeCount++;
@@ -47,6 +60,25 @@ export function aggregateDailyRecap(db: DatabaseSync, date: string): DailyRecapS
         checkOutTime: log.checkOutTime,
         status: log.status,
         remarks: log.remarks,
+      });
+    } else if (req) {
+      if (req.type === 'WFH') {
+        wfhCount++;
+        presentCount++;
+      } else if (req.type === 'SAKIT') {
+        sickCount++;
+      } else {
+        permitCount++;
+      }
+
+      items.push({
+        internId: intern.id,
+        namaLengkap: intern.namaLengkap,
+        divisi: intern.divisi,
+        namaMentor: intern.namaMentor,
+        emailMentor: intern.emailMentor,
+        status: req.type,
+        remarks: `${req.type} (Approved): ${req.reason}`,
       });
     } else {
       absentCount++;
@@ -73,12 +105,22 @@ export function aggregateDailyRecap(db: DatabaseSync, date: string): DailyRecapS
         present: 0,
         absent: 0,
         late: 0,
+        wfh: 0,
+        sick: 0,
+        permit: 0,
       };
       divisionMap.set(item.divisi, div);
     }
     div.totalInterns++;
     if (item.status === 'ABSENT') {
       div.absent++;
+    } else if (item.status === 'WFH') {
+      div.present++;
+      div.wfh = (div.wfh || 0) + 1;
+    } else if (item.status === 'SAKIT') {
+      div.sick = (div.sick || 0) + 1;
+    } else if (item.status === 'IZIN' || item.status === 'DISPENSASI' || item.status === 'OFF_SITE') {
+      div.permit = (div.permit || 0) + 1;
     } else {
       div.present++;
       if (item.status === 'LATE') div.late++;
@@ -92,6 +134,9 @@ export function aggregateDailyRecap(db: DatabaseSync, date: string): DailyRecapS
     onTimeCount,
     lateCount,
     earlyDepartureCount,
+    wfhCount,
+    sickCount,
+    permitCount,
     absentCount,
     divisionBreakdowns: Array.from(divisionMap.values()),
     items,
@@ -105,9 +150,9 @@ export function formatDailyInternsReport(summary: DailyRecapSummary): string {
   const lines: string[] = [
     `📊 *REKAP PRESENSI MAGANG INDOSAT*`,
     `📅 Tanggal: ${summary.date}`,
-    `👥 Total: ${summary.totalActive} | Hadir: ${summary.presentCount} | Tidak Hadir: ${summary.absentCount}`,
+    `👥 Total: ${summary.totalActive} | Hadir/WFH: ${summary.presentCount} | Izin/Sakit: ${(summary.sickCount || 0) + (summary.permitCount || 0)} | Alpha: ${summary.absentCount}`,
     '',
-    `✅ *Daftar Hadir:*`,
+    `✅ *Daftar Hadir & Remote:*`,
   ];
 
   const presentItems = summary.items.filter((i) => i.status !== 'ABSENT');
@@ -115,14 +160,22 @@ export function formatDailyInternsReport(summary: DailyRecapSummary): string {
     lines.push('_Belum ada yang melakukan presensi hari ini._');
   } else {
     for (const item of presentItems) {
-      const timeIn = item.checkInTime ? item.checkInTime.slice(0, 5) : '-';
-      const timeOut = item.checkOutTime ? ` (Pulang: ${item.checkOutTime.slice(0, 5)})` : '';
-      const remark = item.remarks ? ` [${item.remarks}]` : '';
-      lines.push(`• *${item.namaLengkap}* (${item.divisi}) - ${timeIn}${timeOut}${remark}`);
+      if (item.status === 'WFH') {
+        lines.push(`• *${item.namaLengkap}* (${item.divisi}) - 🏡 [WFH: ${item.remarks || 'Remote'}]`);
+      } else if (item.status === 'SAKIT') {
+        lines.push(`• *${item.namaLengkap}* (${item.divisi}) - 🏥 [SAKIT: ${item.remarks || 'Surat Dokter'}]`);
+      } else if (item.status === 'IZIN' || item.status === 'DISPENSASI') {
+        lines.push(`• *${item.namaLengkap}* (${item.divisi}) - 📝 [IZIN: ${item.remarks || 'Dispensasi'}]`);
+      } else {
+        const timeIn = item.checkInTime ? item.checkInTime.slice(0, 5) : '-';
+        const timeOut = item.checkOutTime ? ` (Pulang: ${item.checkOutTime.slice(0, 5)})` : '';
+        const remark = item.remarks ? ` [${item.remarks}]` : '';
+        lines.push(`• *${item.namaLengkap}* (${item.divisi}) - ${timeIn}${timeOut}${remark}`);
+      }
     }
   }
 
-  lines.push('', `❌ *Belum Hadir:*`);
+  lines.push('', `❌ *Belum Hadir / Alpha:*`);
   const absentItems = summary.items.filter((i) => i.status === 'ABSENT');
   if (absentItems.length === 0) {
     lines.push('_Semua intern hadir hari ini._');
@@ -169,12 +222,18 @@ export function generateRecapHtmlTable(summary: DailyRecapSummary, filterMentorE
 
   const rows = items
     .map((item) => {
-      const isAbsent = item.status === 'ABSENT';
-      const statusBadge = isAbsent
-        ? `<span style="color: #ef4444; font-weight: bold;">TIDAK HADIR</span>`
-        : item.status === 'LATE'
-        ? `<span style="color: #f59e0b; font-weight: bold;">TERLAMBAT</span>`
-        : `<span style="color: #10b981; font-weight: bold;">HADIR</span>`;
+      const statusBadge =
+        item.status === 'ABSENT'
+          ? `<span style="color: #ef4444; font-weight: bold;">TIDAK HADIR</span>`
+          : item.status === 'WFH'
+          ? `<span style="color: #0284c7; font-weight: bold;">WFH</span>`
+          : item.status === 'SAKIT'
+          ? `<span style="color: #d97706; font-weight: bold;">SAKIT</span>`
+          : item.status === 'IZIN' || item.status === 'DISPENSASI'
+          ? `<span style="color: #7c3aed; font-weight: bold;">IZIN</span>`
+          : item.status === 'LATE'
+          ? `<span style="color: #f59e0b; font-weight: bold;">TERLAMBAT</span>`
+          : `<span style="color: #10b981; font-weight: bold;">HADIR</span>`;
 
       return `
       <tr style="border-bottom: 1px solid #e5e7eb;">

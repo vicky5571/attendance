@@ -18,9 +18,37 @@ export interface InternProfile {
   jurusan: string;
   periodeMagangSelesai: string; // ISO Date YYYY-MM-DD
   status: 'ACTIVE' | 'COMPLETED';
+  pinHash?: string;
 }
 
 export type AttendanceStatus = 'ON_TIME' | 'LATE' | 'EARLY_DEPARTURE' | 'ABSENT';
+
+export type LeaveType = 'WFH' | 'SAKIT' | 'IZIN' | 'DISPENSASI' | 'OFF_SITE';
+
+export type RequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface AttendanceRequest {
+  id: string;
+  internId: string;
+  date: string; // YYYY-MM-DD
+  type: LeaveType;
+  reason: string;
+  attachmentPath?: string | null;
+  status: RequestStatus;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  createdAt: string; // ISO DateTime
+}
+
+export interface OfficeLocation {
+  id: string;
+  name: string;
+  address?: string;
+  latitude: number;
+  longitude: number;
+  maxRadiusMeters: number;
+  isActive: boolean;
+}
 
 export interface AttendanceRecord {
   id: string;
@@ -31,8 +59,28 @@ export interface AttendanceRecord {
   checkInCoords?: Coordinates;
   checkOutCoords?: Coordinates;
   distanceInMeters?: number;
+  locationId?: string;
+  photoUrl?: string;
   status: AttendanceStatus;
   remarks?: string;
+}
+
+export interface MonthlyTimesheetSummary {
+  internId: string;
+  month: string; // YYYY-MM
+  totalWorkDays: number;
+  presentDays: number;
+  onTimeDays: number;
+  lateDays: number;
+  earlyDepartureDays: number;
+  wfhDays: number;
+  sickDays: number;
+  permitDays: number;
+  absentDays: number;
+  totalWorkHours: number;
+  punctualityRate: number; // 0 - 100 percentage
+  records: AttendanceRecord[];
+  requests: AttendanceRequest[];
 }
 
 export interface OfficeConfig {
@@ -54,7 +102,7 @@ export interface RecapInternItem {
   emailMentor: string;
   checkInTime?: string;
   checkOutTime?: string;
-  status: AttendanceStatus;
+  status: AttendanceStatus | LeaveType;
   remarks?: string;
 }
 
@@ -64,6 +112,9 @@ export interface DivisionBreakdown {
   present: number;
   absent: number;
   late: number;
+  wfh?: number;
+  sick?: number;
+  permit?: number;
 }
 
 export interface DailyRecapSummary {
@@ -73,6 +124,9 @@ export interface DailyRecapSummary {
   onTimeCount: number;
   lateCount: number;
   earlyDepartureCount: number;
+  wfhCount?: number;
+  sickCount?: number;
+  permitCount?: number;
   absentCount: number;
   divisionBreakdowns: DivisionBreakdown[];
   items: RecapInternItem[];
