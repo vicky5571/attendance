@@ -30,16 +30,16 @@ export function createMockTransporter(): {
   const transporter = nodemailer.createTransport({
     name: 'mock',
     version: '1.0.0',
-    send: (mail, callback) => {
-      const data = mail.data;
+    send: (mail: any, callback: any) => {
+      const data = mail?.data || {};
       sentMessages.push({
-        to: Array.isArray(data.to) ? data.to.join(',') : (data.to as string) || '',
-        subject: data.subject || '',
-        html: (data.html as string) || '',
+        to: Array.isArray(data.to) ? data.to.join(',') : String(data.to || ''),
+        subject: String(data.subject || ''),
+        html: String(data.html || ''),
       });
       callback(null, { messageId: `mock-${Date.now()}` });
     },
-  } as unknown as nodemailer.TransportOptions);
+  } as any);
 
   return { transporter, sentMessages };
 }
