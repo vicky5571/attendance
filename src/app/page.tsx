@@ -36,7 +36,7 @@ export default function AttendancePage() {
   const [records, setRecords] = useState<{ in?: string; out?: string; remarks?: string }>({});
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const [todayStr, setTodayStr] = useState<string>('');
 
   const notify = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
@@ -67,9 +67,11 @@ export default function AttendancePage() {
   // Sync attendance state on intern change (Offline-first: cache -> remote API)
   useEffect(() => {
     if (!selectedId) return;
+    const today = new Date().toISOString().split('T')[0];
+    setTodayStr(today);
 
     // 1. Instant optimistic restore from local storage cache
-    const cached = getAttendanceCache(selectedId, todayStr);
+    const cached = getAttendanceCache(selectedId, today);
     if (cached) {
       setRecords({ in: cached.in, out: cached.out, remarks: cached.remarks });
     } else {
@@ -85,7 +87,7 @@ export default function AttendancePage() {
           const outTime = data.record.checkOutTime ? data.record.checkOutTime.slice(0, 5) : undefined;
           const newRec = { in: inTime, out: outTime, remarks: data.record.remarks };
           setRecords(newRec);
-          saveAttendanceCache(selectedId, todayStr, {
+          saveAttendanceCache(selectedId, today, {
             ...newRec,
             status: data.record.status,
           });
@@ -96,7 +98,7 @@ export default function AttendancePage() {
       .catch(() => {
         // Offline fallback: retain local cache silently
       });
-  }, [selectedId, todayStr]);
+  }, [selectedId]);
 
   useEffect(() => {
     const pollWa = () =>
@@ -170,7 +172,8 @@ export default function AttendancePage() {
           ? { ...records, in: now, remarks: serverRemarks }
           : { ...records, out: now, remarks: serverRemarks };
         setRecords(updated);
-        saveAttendanceCache(selectedId, todayStr, updated);
+        const currentDate = todayStr || new Date().toISOString().split('T')[0];
+        saveAttendanceCache(selectedId, currentDate, updated);
         notify(`Berhasil ${type === 'check-in' ? 'Check-In' : 'Check-Out'}!`, 'success');
       } else {
         notify(data.error || 'Gagal memproses presensi', 'error');
