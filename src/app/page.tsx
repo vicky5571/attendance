@@ -6,6 +6,10 @@ import { ProfileCard } from '@/components/ProfileCard';
 import { RadarCard } from '@/components/RadarCard';
 import { AttendanceActions } from '@/components/AttendanceActions';
 import { WhatsAppModal } from '@/components/WhatsAppModal';
+import { PinModal } from '@/components/PinModal';
+import { RequestModal } from '@/components/RequestModal';
+import { HistoryModal } from '@/components/HistoryModal';
+import { MentorApprovalModal } from '@/components/MentorApprovalModal';
 import { calculateDistance, isWithinRadius } from '@/lib/client-geo';
 import {
   saveAttendanceCache,
@@ -13,17 +17,44 @@ import {
   saveSelectedInternId,
   getSelectedInternId,
 } from '@/lib/client-storage';
-import type { OfficeConfig, InternProfile } from '@/types';
+import type { OfficeConfig, InternProfile, OfficeLocation } from '@/types';
 
 export default function AttendancePage() {
   const [config, setConfig] = useState<OfficeConfig | null>(null);
   const [interns, setInterns] = useState<InternProfile[]>([]);
   const [selectedId, setSelectedId] = useState('intern-sarah');
+  const [locations, setLocations] = useState<OfficeLocation[]>([]);
+  const [selectedLocationId, setSelectedLocationId] = useState('loc-kppti');
+
   const [wa, setWa] = useState<{ status: 'disconnected' | 'connecting' | 'open'; qr: string | null }>({
     status: 'disconnected',
     qr: null,
   });
   const [isWaModalOpen, setIsWaModalOpen] = useState(false);
+
+  // Modals state
+  const [pinModalOpen, setPinModalOpen] = useState(false);
+  const [pendingActionType, setPendingActionType] = useState<'check-in' | 'check-out' | null>(null);
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [approvalModalOpen, setApprovalModalOpen] = useState(false);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+
+  const fetchPendingCount = () => {
+    fetch('/api/attendance/requests?status=PENDING')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const list = Array.isArray(data?.requests) ? data.requests : Array.isArray(data) ? data : [];
+        setPendingApprovalsCount(list.length);
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchPendingCount();
+    const interval = setInterval(fetchPendingCount, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // GPS state
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -49,15 +80,21 @@ export default function AttendancePage() {
     if (saved) setSelectedId(saved);
   }, []);
 
-  // Fetch initial config & intern master data
+  // Fetch initial config, locations, & intern master data
   useEffect(() => {
     Promise.all([
       fetch('/api/config').then((r) => r.json()),
       fetch('/api/interns').then((r) => r.json()),
-    ]).then(([cfg, ints]) => {
+      fetch('/api/config/locations').then((r) => (r.ok ? r.json() : [])),
+    ]).then(([cfg, ints, locs]) => {
       setConfig(cfg);
       setInterns(ints);
-      if (cfg) {
+      if (Array.isArray(locs) && locs.length > 0) {
+        setLocations(locs);
+        setSelectedLocationId(locs[0].id);
+        setCoords({ lat: locs[0].latitude, lng: locs[0].longitude });
+        setDistance(0);
+      } else if (cfg) {
         setCoords({ lat: cfg.targetLatitude, lng: cfg.targetLongitude });
         setDistance(0);
       }
@@ -65,7 +102,7 @@ export default function AttendancePage() {
   }, []);
 
   // Sync attendance state on intern change (Offline-first: cache -> remote API)
-  useEffect(() => {
+  const syncAttendanceStatus = () => {
     if (!selectedId) return;
     const today = new Date().toISOString().split('T')[0];
     setTodayStr(today);
@@ -79,7 +116,7 @@ export default function AttendancePage() {
     }
 
     // 2. Query ground truth from server API
-    fetch(`/api/attendance/status?internId=${encodeURIComponent(selectedId)}&date=${todayStr}`)
+    fetch(`/api/attendance/status?internId=${encodeURIComponent(selectedId)}&date=${today}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.record) {
@@ -96,9 +133,14 @@ export default function AttendancePage() {
         }
       })
       .catch(() => {
-        // Offline fallback: retain local cache silently
+        // Offline fallback
       });
+  };
+
+  useEffect(() => {
+    syncAttendanceStatus();
   }, [selectedId]);
+
 
   useEffect(() => {
     const pollWa = () =>
@@ -111,12 +153,28 @@ export default function AttendancePage() {
     return () => clearInterval(interval);
   }, []);
 
-  const maxRadius = config?.maxRadiusMeters || 50;
+  const activeLocation = locations.find((l) => l.id === selectedLocationId);
+  const targetLat = activeLocation?.latitude ?? config?.targetLatitude ?? -6.180495;
+  const targetLng = activeLocation?.longitude ?? config?.targetLongitude ?? 106.822769;
+  const maxRadius = activeLocation?.maxRadiusMeters ?? config?.maxRadiusMeters ?? 50;
   const isWithin = isWithinRadius(distance, maxRadius);
 
   const handleSelectIntern = (id: string) => {
     setSelectedId(id);
     saveSelectedInternId(id);
+  };
+
+  const handleLocationChange = (locId: string) => {
+    setSelectedLocationId(locId);
+    const loc = locations.find((l) => l.id === locId);
+    if (loc && isSimulated) {
+      setCoords({ lat: loc.latitude, lng: loc.longitude });
+      setDistance(0);
+      notify(`Lokasi kerja diubah ke: ${loc.name}`, 'success');
+    } else if (loc && coords) {
+      const d = calculateDistance(coords.lat, coords.lng, loc.latitude, loc.longitude);
+      setDistance(d);
+    }
   };
 
   const handleRealGps = () => {
@@ -127,9 +185,7 @@ export default function AttendancePage() {
         const { latitude, longitude } = pos.coords;
         setCoords({ lat: latitude, lng: longitude });
         setIsSimulated(false);
-        if (config) {
-          setDistance(calculateDistance(latitude, longitude, config.targetLatitude, config.targetLongitude));
-        }
+        setDistance(calculateDistance(latitude, longitude, targetLat, targetLng));
         setGpsLoading(false);
         notify('Titik GPS asli terdeteksi', 'success');
       },
@@ -146,82 +202,161 @@ export default function AttendancePage() {
   };
 
   const handleSimulate = () => {
-    if (!config) return;
-    setCoords({ lat: config.targetLatitude, lng: config.targetLongitude });
+    setCoords({ lat: targetLat, lng: targetLng });
     setDistance(0);
     setIsSimulated(true);
-    notify('Simulasi: Berada tepat di titik kantor (0 m)', 'success');
+    notify(`Simulasi: Berada tepat di titik kantor (0 m)`, 'success');
   };
 
-  const submitAttendance = async (type: 'check-in' | 'check-out') => {
+  // Trigger PIN Modal before submitting
+  const initiateAttendance = (type: 'check-in' | 'check-out') => {
     if (!coords) return notify('Koordinat GPS belum siap', 'error');
     if (!isWithin) return notify(`Di luar radius batas geofence (${maxRadius}m)`, 'error');
+    setPendingActionType(type);
+    setPinModalOpen(true);
+  };
 
+  // Submit check-in or check-out with verified PIN
+  const executeAttendanceWithPin = async (pin: string): Promise<boolean> => {
+    if (!coords || !pendingActionType) return false;
     setActionLoading(true);
     try {
-      const res = await fetch(`/api/attendance/${type}`, {
+      const res = await fetch(`/api/attendance/${pendingActionType}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ internId: selectedId, latitude: coords.lat, longitude: coords.lng }),
+        body: JSON.stringify({
+          internId: selectedId,
+          latitude: coords.lat,
+          longitude: coords.lng,
+          pin,
+          locationId: selectedLocationId,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
         const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-        const serverRemarks = data.record?.remarks || (type === 'check-in' ? 'Tepat Waktu' : records.remarks);
-        const updated = type === 'check-in'
+        const serverRemarks = data.record?.remarks || (pendingActionType === 'check-in' ? 'Tepat Waktu' : records.remarks);
+        const updated = pendingActionType === 'check-in'
           ? { ...records, in: now, remarks: serverRemarks }
           : { ...records, out: now, remarks: serverRemarks };
         setRecords(updated);
         const currentDate = todayStr || new Date().toISOString().split('T')[0];
         saveAttendanceCache(selectedId, currentDate, updated);
-        notify(`Berhasil ${type === 'check-in' ? 'Check-In' : 'Check-Out'}!`, 'success');
+        notify(`Berhasil ${pendingActionType === 'check-in' ? 'Check-In' : 'Check-Out'}!`, 'success');
+        setPinModalOpen(false);
+        setPendingActionType(null);
+        setActionLoading(false);
+        return true;
       } else {
-        notify(data.error || 'Gagal memproses presensi', 'error');
+        // Return false to trigger PIN shake
+        setActionLoading(false);
+        return false;
       }
     } catch {
       notify('Koneksi server gagal', 'error');
+      setActionLoading(false);
+      return false;
     }
-    setActionLoading(false);
+  };
+
+  const handleConnectWa = async () => {
+    try {
+      await fetch('/api/whatsapp/connect', { method: 'POST' });
+      notify('Menghubungkan sesi WhatsApp...', 'success');
+    } catch {
+      notify('Gagal menghubungkan WhatsApp', 'error');
+    }
   };
 
   const activeIntern = interns.find((i) => i.id === selectedId) || interns[0];
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-slate-900 flex flex-col items-center p-4 sm:p-6 font-sans">
-      {/* Toast Alert */}
+      {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed top-4 z-50 px-4 py-2.5 rounded-full text-xs font-bold shadow-xl flex items-center gap-2 border ${
+          className={`fixed top-4 z-50 px-4 py-2.5 rounded-full text-xs font-bold shadow-lg transition-all animate-bounce border ${
             toast.type === 'success'
-              ? 'bg-emerald-500 text-white border-emerald-600'
-              : 'bg-rose-500 text-white border-rose-600'
+              ? 'bg-emerald-500 text-white border-emerald-400'
+              : 'bg-rose-500 text-white border-rose-400'
           }`}
         >
-          <span>{toast.type === 'success' ? '✓' : '⚠️'}</span>
-          <span>{toast.msg}</span>
+          {toast.msg}
         </div>
       )}
 
-      {/* Mobile Shell Max 440px */}
-      <div className="w-full max-w-[440px] flex flex-col gap-4 pb-10">
+      {/* Main Container Wrapper */}
+      <div className="w-full max-w-md flex flex-col gap-4">
+        {/* Header App */}
         <Header
-          internName={activeIntern?.namaLengkap || 'Intern'}
+          internName={activeIntern?.namaLengkap || 'Peserta Magang'}
           waStatus={wa.status}
           onOpenWaModal={() => setIsWaModalOpen(true)}
         />
 
-        <ProfileCard interns={interns} selectedId={selectedId} onSelect={handleSelectIntern} />
+        {/* Enterprise Quick-Action Toolbar */}
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            onClick={() => setRequestModalOpen(true)}
+            className="flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
+          >
+            <span className="text-base mb-0.5">✍️</span>
+            <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
+              Izin / WFH
+            </span>
+          </button>
 
+          <button
+            type="button"
+            onClick={() => setHistoryModalOpen(true)}
+            className="flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
+          >
+            <span className="text-base mb-0.5">📊</span>
+            <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
+              Timesheet & CSV
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setApprovalModalOpen(true)}
+            className="relative flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
+          >
+            {pendingApprovalsCount > 0 && (
+              <span className="absolute -top-1.5 -right-1 bg-[#ED0278] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-md animate-pulse">
+                {pendingApprovalsCount}
+              </span>
+            )}
+            <span className="text-base mb-0.5">🛡️</span>
+            <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
+              Persetujuan Mentor
+            </span>
+          </button>
+        </div>
+
+        {/* Profile Card */}
+        <ProfileCard
+          interns={interns}
+          selectedId={selectedId}
+          onSelect={handleSelectIntern}
+        />
+
+        {/* Radar Geofence Card with Multi-Hub Locations */}
         <RadarCard
           distance={distance}
-          maxRadius={config?.maxRadiusMeters || 50}
+          maxRadius={maxRadius}
           isWithinRadius={isWithin}
           isSimulated={isSimulated}
           gpsLoading={gpsLoading}
+          locations={locations}
+          selectedLocationId={selectedLocationId}
+          onLocationChange={handleLocationChange}
           onSimulate={handleSimulate}
           onRealGps={handleRealGps}
         />
 
+        {/* Actions Button */}
         <AttendanceActions
           isWithinRadius={isWithin}
           loading={actionLoading}
@@ -230,22 +365,62 @@ export default function AttendancePage() {
           savedRemarks={records.remarks}
           workStartTime={config?.workStartTime}
           workEndTime={config?.workEndTime}
-          onCheckIn={() => submitAttendance('check-in')}
-          onCheckOut={() => submitAttendance('check-out')}
+          onCheckIn={() => initiateAttendance('check-in')}
+          onCheckOut={() => initiateAttendance('check-out')}
         />
-
-        {/* Footer */}
-        <footer className="text-center pt-2 text-[11px] text-slate-400 font-medium">
-          Indosat Ooredoo Hutchison &bull; IAC Attendance Program
-        </footer>
       </div>
 
+      {/* WhatsApp QR Modal */}
       <WhatsAppModal
         isOpen={isWaModalOpen}
         onClose={() => setIsWaModalOpen(false)}
         status={wa.status}
         qr={wa.qr}
-        onConnect={() => fetch('/api/whatsapp/connect', { method: 'POST' })}
+        onConnect={handleConnectWa}
+      />
+
+      {/* PIN Anti-Proxy Verification Modal */}
+      <PinModal
+        isOpen={pinModalOpen}
+        onClose={() => {
+          setPinModalOpen(false);
+          setPendingActionType(null);
+        }}
+        onSubmit={executeAttendanceWithPin}
+        actionType={pendingActionType || 'check-in'}
+        internName={activeIntern?.namaLengkap || 'Peserta'}
+      />
+
+      {/* Leave & Remote Request Modal */}
+      <RequestModal
+        isOpen={requestModalOpen}
+        onClose={() => setRequestModalOpen(false)}
+        internId={selectedId}
+        internName={activeIntern?.namaLengkap || 'Peserta'}
+        onSuccess={() => {
+          notify('Pengajuan berhasil dikirim ke mentor', 'success');
+          fetchPendingCount();
+        }}
+      />
+
+      {/* Timesheet History & Logbook CSV Export Modal */}
+      <HistoryModal
+        isOpen={historyModalOpen}
+        onClose={() => setHistoryModalOpen(false)}
+        internId={selectedId}
+        internName={activeIntern?.namaLengkap || 'Peserta'}
+      />
+
+      {/* Mentor Approval Dashboard Modal */}
+      <MentorApprovalModal
+        isOpen={approvalModalOpen}
+        onClose={() => setApprovalModalOpen(false)}
+        interns={interns}
+        onActionComplete={() => {
+          notify('Status permohonan berhasil diperbarui', 'success');
+          syncAttendanceStatus();
+          fetchPendingCount();
+        }}
       />
     </div>
   );
