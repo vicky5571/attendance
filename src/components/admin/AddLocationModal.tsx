@@ -57,14 +57,27 @@ export function AddLocationModal({ isOpen, onClose, onSuccess }: AddLocationModa
 
   if (!isOpen) return null;
 
-  const applyParsedCoordinates = (lat: number, lng: number, placeName?: string) => {
+  const applyParsedCoordinates = (
+    lat: number,
+    lng: number,
+    placeName?: string,
+    addressFromMap?: string
+  ) => {
     setLatitude(lat.toString());
     setLongitude(lng.toString());
     if (placeName && !name.trim()) {
       setName(placeName);
     }
+    if (addressFromMap && !address.trim()) {
+      setAddress(addressFromMap);
+    }
+    const details = [];
+    if (placeName) details.push(`nama "${placeName}"`);
+    if (addressFromMap) details.push('alamat');
     setGmapsSuccessMsg(
-      placeName ? `Koordinat & nama "${placeName}" berhasil diambil!` : 'Koordinat berhasil diekstrak!'
+      details.length > 0
+        ? `Koordinat, ${details.join(' & ')} berhasil diekstrak!`
+        : 'Koordinat berhasil diekstrak!'
     );
     setErrorMsg('');
   };
@@ -80,15 +93,15 @@ export function AddLocationModal({ isOpen, onClose, onSuccess }: AddLocationModa
     setErrorMsg('');
     setGmapsSuccessMsg('');
 
-    // 1. Direct synchronous extraction first
+    // 1. Check if direct synchronous extraction already has full address
     const direct = parseGoogleMapsUrl(trimmed);
-    if (direct) {
-      applyParsedCoordinates(direct.latitude, direct.longitude, direct.placeName);
+    if (direct && direct.address) {
+      applyParsedCoordinates(direct.latitude, direct.longitude, direct.placeName, direct.address);
       setParsingGmaps(false);
       return;
     }
 
-    // 2. Fetch server API to follow short URL redirects (e.g. maps.app.goo.gl)
+    // 2. Fetch server API to follow short URL redirects and reverse-geocode address
     try {
       const res = await fetch('/api/config/locations/parse-gmaps', {
         method: 'POST',
@@ -99,9 +112,13 @@ export function AddLocationModal({ isOpen, onClose, onSuccess }: AddLocationModa
       if (!res.ok) {
         throw new Error(data.error || 'Gagal mengekstrak koordinat dari link Google Maps.');
       }
-      applyParsedCoordinates(data.latitude, data.longitude, data.placeName);
+      applyParsedCoordinates(data.latitude, data.longitude, data.placeName, data.address);
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Terjadi kesalahan saat membaca link.');
+      if (direct) {
+        applyParsedCoordinates(direct.latitude, direct.longitude, direct.placeName, direct.address);
+      } else {
+        setErrorMsg(err instanceof Error ? err.message : 'Terjadi kesalahan saat membaca link.');
+      }
     } finally {
       setParsingGmaps(false);
     }
@@ -112,7 +129,7 @@ export function AddLocationModal({ isOpen, onClose, onSuccess }: AddLocationModa
     setGmapsSuccessMsg('');
     const direct = parseGoogleMapsUrl(val.trim());
     if (direct) {
-      applyParsedCoordinates(direct.latitude, direct.longitude, direct.placeName);
+      applyParsedCoordinates(direct.latitude, direct.longitude, direct.placeName, direct.address);
     }
   };
 

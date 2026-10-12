@@ -22,6 +22,17 @@ describe('Google Maps Coordinate Extractor', () => {
     assert.equal(result.placeName, 'Gedung KPPTI Indosat');
   });
 
+  it('should extract place name and address when place link contains comma-separated address', () => {
+    const url =
+      'https://www.google.com/maps/place/Gedung+KPPTI+Indosat,+Jl.+Medan+Merdeka+Barat+No.21,+Jakarta/@-6.180495,106.822769,17z';
+    const result = parseGoogleMapsUrl(url);
+    assert.ok(result);
+    assert.equal(result.latitude, -6.180495);
+    assert.equal(result.longitude, 106.822769);
+    assert.equal(result.placeName, 'Gedung KPPTI Indosat');
+    assert.equal(result.address, 'Jl. Medan Merdeka Barat No.21, Jakarta');
+  });
+
   it('should extract coordinates from ?q= parameter URL', () => {
     const url = 'https://maps.google.com/?q=-6.180495,106.822769';
     const result = parseGoogleMapsUrl(url);

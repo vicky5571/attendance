@@ -1,4 +1,4 @@
-import { resolveGoogleMapsUrl, parseGoogleMapsUrl } from '../../../../../lib/gmaps-parser.ts';
+import { resolveGoogleMapsUrl, parseGoogleMapsUrl, reverseGeocodeNominatim } from '../../../../../lib/gmaps-parser.ts';
 
 export async function POST(req: Request) {
   try {
@@ -17,6 +17,15 @@ export async function POST(req: Request) {
     // Fast synchronous extraction first
     const directResult = parseGoogleMapsUrl(trimmed);
     if (directResult) {
+      if (!directResult.address) {
+        const geo = await reverseGeocodeNominatim(directResult.latitude, directResult.longitude);
+        if (geo?.address) {
+          directResult.address = geo.address;
+        }
+        if (!directResult.placeName && geo?.placeName) {
+          directResult.placeName = geo.placeName;
+        }
+      }
       return Response.json(directResult, { status: 200 });
     }
 

@@ -2,6 +2,7 @@ export interface ParsedGmapsLocation {
   latitude: number;
   longitude: number;
   placeName?: string;
+  address?: string;
   resolvedUrl?: string;
 }
 
@@ -67,12 +68,20 @@ export function parseGoogleMapsUrl(input: string): ParsedGmapsLocation | null {
     return null;
   }
 
-  // Extract place name from /place/Name+Here/ if present
+  // Extract place name and address from /place/Name+Here,+Street+Address/ if present
   let placeName: string | undefined;
+  let address: string | undefined;
   const placeNameMatch = str.match(/\/place\/([^/@?#]+)/);
   if (placeNameMatch) {
     try {
-      placeName = decodeURIComponent(placeNameMatch[1].replace(/\+/g, ' ')).trim();
+      const decoded = decodeURIComponent(placeNameMatch[1].replace(/\+/g, ' ')).trim();
+      if (decoded.includes(',')) {
+        const parts = decoded.split(',');
+        placeName = parts[0].trim();
+        address = parts.slice(1).join(',').trim();
+      } else {
+        placeName = decoded;
+      }
     } catch {
       // ignore decode error
     }
@@ -82,60 +91,102 @@ export function parseGoogleMapsUrl(input: string): ParsedGmapsLocation | null {
     latitude: lat,
     longitude: lng,
     placeName: placeName || undefined,
+    address: address || undefined,
   };
 }
 
 /**
- * Resolves short Google Maps URLs (e.g. maps.app.goo.gl or goo.gl/maps) via HTTP redirect follow
- * and extracts geographic coordinates from the resolved URL or HTML response.
+ * Reverse-geocodes coordinates into a full address via OpenStreetMap Nominatim.
  */
-export async function resolveGoogleMapsUrl(inputUrl: string): Promise<ParsedGmapsLocation | null> {
-  const parsedDirect = parseGoogleMapsUrl(inputUrl);
-  if (parsedDirect) return parsedDirect;
-
-  const trimmed = inputUrl.trim();
-  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
-    return null;
-  }
-
+export async function reverseGeocodeNominatim(
+  lat: number,
+  lng: number
+): Promise<{ address?: string; placeName?: string } | null> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 6000);
+    const timeout = setTimeout(() => controller.abort(), 3500);
 
-    const res = await fetch(trimmed, {
-      method: 'GET',
-      redirect: 'follow',
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+    const res = await fetch(url, {
       headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': 'Indosat-IAC-Attendance/1.0 (contact: admin@ioh.co.id)',
+        'Accept-Language': 'id,en;q=0.9',
       },
       signal: controller.signal,
     });
     clearTimeout(timeout);
 
-    // Try parsing the redirected URL
-    if (res.url && res.url !== trimmed) {
-      const fromResolvedUrl = parseGoogleMapsUrl(res.url);
-      if (fromResolvedUrl) {
-        return {
-          ...fromResolvedUrl,
-          resolvedUrl: res.url,
-        };
-      }
-    }
-
-    // Try parsing the HTML text body (meta refresh or static map images)
-    const htmlText = await res.text();
-    const fromHtml = parseGoogleMapsUrl(htmlText);
-    if (fromHtml) {
-      return {
-        ...fromHtml,
-        resolvedUrl: res.url,
-      };
-    }
-
-    return null;
+    if (!res.ok) return null;
+    const data = await res.json();
+    const address = data.display_name;
+    const placeName = data.name || data.address?.building || data.address?.office;
+    return { address, placeName };
   } catch {
     return null;
   }
+}
+
+/**
+ * Resolves short Google Maps URLs (e.g. maps.app.goo.gl or goo.gl/maps) via HTTP redirect follow
+ * and extracts geographic coordinates and address from the resolved URL or reverse geocoding.
+ */
+export async function resolveGoogleMapsUrl(inputUrl: string): Promise<ParsedGmapsLocation | null> {
+  let parsed = parseGoogleMapsUrl(inputUrl);
+
+  if (!parsed) {
+    const trimmed = inputUrl.trim();
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+      return null;
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000);
+
+      const res = await fetch(trimmed, {
+        method: 'GET',
+        redirect: 'follow',
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      // Try parsing the redirected URL
+      if (res.url && res.url !== trimmed) {
+        parsed = parseGoogleMapsUrl(res.url);
+        if (parsed) {
+          parsed.resolvedUrl = res.url;
+        }
+      }
+
+      // Try parsing the HTML text body (meta refresh or static map images)
+      if (!parsed) {
+        const htmlText = await res.text();
+        parsed = parseGoogleMapsUrl(htmlText);
+        if (parsed) {
+          parsed.resolvedUrl = res.url;
+        }
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  if (!parsed) return null;
+
+  // Enrich with reverse geocoding if address is missing
+  if (!parsed.address) {
+    const geo = await reverseGeocodeNominatim(parsed.latitude, parsed.longitude);
+    if (geo?.address) {
+      parsed.address = geo.address;
+    }
+    if (!parsed.placeName && geo?.placeName) {
+      parsed.placeName = geo.placeName;
+    }
+  }
+
+  return parsed;
 }
