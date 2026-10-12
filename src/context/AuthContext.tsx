@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { loginIntern, loginAdmin, fetchCurrentUser, logoutUser } from '@/lib/client-auth';
+import { loginIntern, loginAdmin, loginWithCredentials, fetchCurrentUser, logoutUser } from '@/lib/client-auth';
 import type { AuthResponseUser, UserRole } from '@/types';
 
 interface AuthContextType {
@@ -9,6 +9,7 @@ interface AuthContextType {
   role: UserRole | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   loginAsIntern: (internId: string, pin: string) => Promise<{ success: boolean; error?: string }>;
   loginAsAdmin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -35,6 +36,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     refreshUser();
   }, [refreshUser]);
+
+  const login = async (email: string, password: string) => {
+    try {
+      const res = await loginWithCredentials(email, password);
+      setUser(res.user);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Login gagal' };
+    }
+  };
 
   const loginAsIntern = async (internId: string, pin: string) => {
     try {
@@ -71,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role,
         isLoading,
         isAuthenticated,
+        login,
         loginAsIntern,
         loginAsAdmin,
         logout,
@@ -91,6 +103,7 @@ export function useAuth(): AuthContextType {
       role: null,
       isLoading: false,
       isAuthenticated: false,
+      login: async () => ({ success: false, error: 'AuthProvider not initialized' }),
       loginAsIntern: async () => ({ success: false, error: 'AuthProvider not initialized' }),
       loginAsAdmin: async () => ({ success: false, error: 'AuthProvider not initialized' }),
       logout: async () => {},
