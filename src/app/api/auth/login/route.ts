@@ -1,8 +1,12 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, randomBytes } from 'node:crypto';
 import { getDatabase } from '../../../../lib/db/client.ts';
 import { getIntern } from '../../../../lib/db/repo.ts';
 import { getUserByEmail, createSession } from '../../../../lib/db/auth-repo.ts';
-import { verifyPin, verifyPassword, generateSessionToken } from '../../../../lib/auth.ts';
+import { verifyPin, verifyPassword } from '../../../../lib/auth.ts';
+
+function generateSessionToken(): string {
+  return randomBytes(32).toString('hex');
+}
 import type { SessionRecord, UserRole } from '../../../../types/index.ts';
 
 const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days

@@ -88,7 +88,7 @@ export function useAuth(): AuthContextType {
     return {
       user: null,
       role: null,
-      isLoading: true,
+      isLoading: false,
       isAuthenticated: false,
       loginAsIntern: async () => ({ success: false, error: 'AuthProvider not initialized' }),
       loginAsAdmin: async () => ({ success: false, error: 'AuthProvider not initialized' }),

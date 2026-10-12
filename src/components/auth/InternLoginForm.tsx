@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import type { InternProfile } from '@/types';
@@ -18,6 +18,31 @@ export function InternLoginForm({ interns, onSuccess }: InternLoginFormProps) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [shake, setShake] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Focus input on initial mount for PC/laptop users
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const triggerSubmit = async (targetId: string, fullPin: string) => {
+    if (loading) return;
+    setLoading(true);
+    setErrorMsg('');
+    const result = await loginAsIntern(targetId, fullPin);
+    setLoading(false);
+
+    if (result.success) {
+      if (onSuccess) onSuccess();
+      router.push('/');
+    } else {
+      setShake(true);
+      setErrorMsg(result.error || 'PIN yang dimasukkan salah');
+      setTimeout(() => setShake(false), 500);
+      setPin('');
+      inputRef.current?.focus();
+    }
+  };
 
   const handleDigit = (digit: string) => {
     if (pin.length < 6) {
@@ -38,24 +63,37 @@ export function InternLoginForm({ interns, onSuccess }: InternLoginFormProps) {
   const handleClear = () => {
     setPin('');
     setErrorMsg('');
+    inputRef.current?.focus();
   };
 
-  const triggerSubmit = async (targetId: string, fullPin: string) => {
-    setLoading(true);
-    setErrorMsg('');
-    const result = await loginAsIntern(targetId, fullPin);
-    setLoading(false);
+  // Keyboard shortcut listener for PC / Laptop
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // If user is interacting with select dropdown, let native select work
+      if (document.activeElement?.tagName === 'SELECT') {
+        return;
+      }
 
-    if (result.success) {
-      if (onSuccess) onSuccess();
-      router.push('/');
-    } else {
-      setShake(true);
-      setErrorMsg(result.error || 'PIN yang dimasukkan salah');
-      setTimeout(() => setShake(false), 500);
-      setPin('');
-    }
-  };
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        handleDigit(e.key);
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        handleDelete();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        handleClear();
+      } else if (e.key === 'Enter') {
+        if (pin.length === 6) {
+          e.preventDefault();
+          triggerSubmit(selectedId, pin);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pin, selectedId, loading]);
 
   const selectedIntern = interns.find((i) => i.id === selectedId) || interns[0];
 
@@ -77,6 +115,7 @@ export function InternLoginForm({ interns, onSuccess }: InternLoginFormProps) {
                 setSelectedId(e.target.value);
                 setPin('');
                 setErrorMsg('');
+                inputRef.current?.focus();
               }}
               className="text-xs font-extrabold text-slate-800 bg-transparent outline-none cursor-pointer w-full truncate"
             >
@@ -91,12 +130,39 @@ export function InternLoginForm({ interns, onSuccess }: InternLoginFormProps) {
       </div>
 
       {/* PIN Prompt */}
-      <p className="text-xs font-bold text-slate-600 text-center mb-1">
+      <p className="text-xs font-bold text-slate-600 text-center mb-0.5">
         Masukkan 6-Digit PIN Anda
       </p>
-      <span className="text-[10px] text-slate-400 text-center mb-4">
+      <span className="text-[10px] text-slate-400 text-center mb-3">
         Default: <strong className="text-slate-700 font-mono">123456</strong>
       </span>
+
+      {/* Keyboard Direct Input Box (for PC / Laptop) */}
+      <div className="relative w-full max-w-[260px] mb-3">
+        <input
+          ref={inputRef}
+          type="password"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={6}
+          value={pin}
+          placeholder="Ketik PIN di sini..."
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+            setPin(val);
+            setErrorMsg('');
+            if (val.length === 6) {
+              triggerSubmit(selectedId, val);
+            }
+          }}
+          disabled={loading}
+          className="w-full text-center tracking-[0.4em] font-mono text-base font-black py-2 px-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:border-[#ED0278] transition shadow-2xs text-slate-800"
+        />
+        <div className="text-[10px] text-slate-400 text-center mt-1 flex items-center justify-center gap-1">
+          <span>⌨️</span>
+          <span>Bisa diketik langsung via keyboard PC/Laptop</span>
+        </div>
+      </div>
 
       {/* PIN Masked Dots */}
       <div className="flex items-center gap-3 mb-4">
@@ -105,7 +171,7 @@ export function InternLoginForm({ interns, onSuccess }: InternLoginFormProps) {
           return (
             <div
               key={idx}
-              className={`w-4 h-4 rounded-full transition-all duration-200 border-2 ${
+              className={`w-3.5 h-3.5 rounded-full transition-all duration-200 border-2 ${
                 isFilled
                   ? 'bg-[#ED0278] border-[#ED0278] scale-110 shadow-sm shadow-pink-500/30'
                   : 'bg-slate-100 border-slate-200'
@@ -122,7 +188,7 @@ export function InternLoginForm({ interns, onSuccess }: InternLoginFormProps) {
         </div>
       )}
 
-      {/* Numeric Keypad */}
+      {/* Numeric Keypad (for Mouse / Touch) */}
       <div className="grid grid-cols-3 gap-2.5 w-full max-w-[260px] mb-2">
         {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
           <button
@@ -130,7 +196,7 @@ export function InternLoginForm({ interns, onSuccess }: InternLoginFormProps) {
             type="button"
             disabled={loading || pin.length >= 6}
             onClick={() => handleDigit(num)}
-            className="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-800 font-extrabold text-lg transition flex items-center justify-center cursor-pointer shadow-2xs border border-slate-100 active:scale-95"
+            className="h-11 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-800 font-extrabold text-lg transition flex items-center justify-center cursor-pointer shadow-2xs border border-slate-100 active:scale-95"
           >
             {num}
           </button>
@@ -139,7 +205,7 @@ export function InternLoginForm({ interns, onSuccess }: InternLoginFormProps) {
           type="button"
           disabled={loading || pin.length === 0}
           onClick={handleClear}
-          className="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-500 font-bold text-[11px] uppercase transition flex items-center justify-center cursor-pointer border border-slate-100 active:scale-95"
+          className="h-11 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-500 font-bold text-[11px] uppercase transition flex items-center justify-center cursor-pointer border border-slate-100 active:scale-95"
         >
           Clear
         </button>
@@ -147,7 +213,7 @@ export function InternLoginForm({ interns, onSuccess }: InternLoginFormProps) {
           type="button"
           disabled={loading || pin.length >= 6}
           onClick={() => handleDigit('0')}
-          className="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-800 font-extrabold text-lg transition flex items-center justify-center cursor-pointer shadow-2xs border border-slate-100 active:scale-95"
+          className="h-11 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-800 font-extrabold text-lg transition flex items-center justify-center cursor-pointer shadow-2xs border border-slate-100 active:scale-95"
         >
           0
         </button>
@@ -155,7 +221,7 @@ export function InternLoginForm({ interns, onSuccess }: InternLoginFormProps) {
           type="button"
           disabled={loading || pin.length === 0}
           onClick={handleDelete}
-          className="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-600 font-extrabold text-sm transition flex items-center justify-center cursor-pointer border border-slate-100 active:scale-95"
+          className="h-11 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-600 font-extrabold text-sm transition flex items-center justify-center cursor-pointer border border-slate-100 active:scale-95"
         >
           ⌫
         </button>
