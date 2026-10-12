@@ -19,6 +19,8 @@ export interface InternProfile {
   periodeMagangSelesai: string; // ISO Date YYYY-MM-DD
   status: 'ACTIVE' | 'COMPLETED';
   pinHash?: string;
+  email?: string;
+  passwordHash?: string;
 }
 
 export type AttendanceStatus = 'ON_TIME' | 'LATE' | 'EARLY_DEPARTURE' | 'ABSENT';
