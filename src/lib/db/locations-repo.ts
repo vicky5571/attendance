@@ -57,3 +57,15 @@ export function listOfficeLocations(db: DatabaseSync, onlyActive = false): Offic
   const rows = stmt.all() as unknown as OfficeLocationRow[];
   return rows.map(mapLocationRow);
 }
+
+export function deleteOfficeLocation(db: DatabaseSync, id: string): boolean {
+  const stmt = db.prepare('DELETE FROM office_locations WHERE id = ?');
+  const res = stmt.run(id);
+  return Number(res.changes) > 0;
+}
+
+export function toggleOfficeLocationStatus(db: DatabaseSync, id: string, isActive: boolean): boolean {
+  const stmt = db.prepare('UPDATE office_locations SET is_active = ? WHERE id = ?');
+  const res = stmt.run(isActive ? 1 : 0, id);
+  return Number(res.changes) > 0;
+}

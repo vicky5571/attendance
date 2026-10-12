@@ -91,14 +91,15 @@ export default function AttendancePage() {
     Promise.all([
       fetch('/api/config').then((r) => r.json()),
       fetch('/api/interns').then((r) => r.json()),
-      fetch('/api/config/locations').then((r) => (r.ok ? r.json() : [])),
+      fetch('/api/config/locations').then((r) => (r.ok ? r.json() : { locations: [] })),
     ]).then(([cfg, ints, locs]) => {
       setConfig(cfg);
       setInterns(ints);
-      if (Array.isArray(locs) && locs.length > 0) {
-        setLocations(locs);
-        setSelectedLocationId(locs[0].id);
-        setCoords({ lat: locs[0].latitude, lng: locs[0].longitude });
+      const locList: OfficeLocation[] = Array.isArray(locs) ? locs : locs?.locations || [];
+      if (locList.length > 0) {
+        setLocations(locList);
+        setSelectedLocationId(locList[0].id);
+        setCoords({ lat: locList[0].latitude, lng: locList[0].longitude });
         setDistance(0);
       } else if (cfg) {
         setCoords({ lat: cfg.targetLatitude, lng: cfg.targetLongitude });

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { WhatsAppModal } from '@/components/WhatsAppModal';
 import { HistoryModal } from '@/components/HistoryModal';
+import { AddLocationModal } from '@/components/admin/AddLocationModal';
 import type { AttendanceRequest, InternProfile, OfficeLocation } from '@/types';
 
 export default function AdminDashboardPage() {
@@ -15,6 +16,8 @@ export default function AdminDashboardPage() {
   const [interns, setInterns] = useState<InternProfile[]>([]);
   const [requests, setRequests] = useState<AttendanceRequest[]>([]);
   const [locations, setLocations] = useState<OfficeLocation[]>([]);
+  const [isAddLocationOpen, setIsAddLocationOpen] = useState(false);
+  const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
   const [reqFilter, setReqFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
@@ -80,8 +83,32 @@ export default function AdminDashboardPage() {
   const fetchLocations = async () => {
     try {
       const res = await fetch('/api/config/locations');
-      if (res.ok) setLocations(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setLocations(Array.isArray(data.locations) ? data.locations : []);
+      }
     } catch {}
+  };
+
+  const handleDeleteLocation = async (id: string, locName: string) => {
+    if (!confirm(`Hapus lokasi kantor "${locName}" dari sistem?`)) return;
+    setDeleteLoadingId(id);
+    try {
+      const res = await fetch(`/api/config/locations?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        notify(`Lokasi "${locName}" berhasil dihapus`, 'success');
+        fetchLocations();
+      } else {
+        const data = await res.json();
+        notify(data.error || 'Gagal menghapus lokasi', 'error');
+      }
+    } catch {
+      notify('Terjadi kesalahan jaringan saat menghapus lokasi', 'error');
+    } finally {
+      setDeleteLoadingId(null);
+    }
   };
 
   const fetchRecap = async (date: string) => {
@@ -305,7 +332,7 @@ export default function AdminDashboardPage() {
               Kantor & Hub
             </span>
             <div className="flex items-baseline justify-between mt-1">
-              <span className="text-2xl font-black text-slate-900">{locations.length || 3}</span>
+              <span className="text-2xl font-black text-slate-900">{locations.length}</span>
               <span className="text-xs font-bold text-slate-500">Geofence</span>
             </div>
           </div>
@@ -576,44 +603,87 @@ export default function AdminDashboardPage() {
 
           {/* Office Hub Geofencing Overview */}
           <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-7 h-7 rounded-lg bg-pink-50 text-[#ED0278] flex items-center justify-center shrink-0">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-7 h-7 rounded-lg bg-pink-50 text-[#ED0278] flex items-center justify-center shrink-0">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-sm font-extrabold text-slate-900">
+                    Multi-Hub Kantor &amp; Geofence
+                  </h3>
                 </div>
-                <h3 className="text-sm font-extrabold text-slate-900">
-                  Multi-Hub Kantor & Geofence
-                </h3>
+                <p className="text-xs text-slate-400">
+                  Titik presensi terdaftar dalam sistem IOH Multi-Hub
+                </p>
               </div>
-              <p className="text-xs text-slate-400">
-                Titik presensi terdaftar dalam sistem IOH Multi-Hub
-              </p>
+
+              <button
+                type="button"
+                onClick={() => setIsAddLocationOpen(true)}
+                className="py-1.5 px-3 rounded-xl bg-[#ED0278] hover:bg-[#d0026b] active:scale-95 text-white font-extrabold text-xs transition shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Tambah Kantor</span>
+              </button>
             </div>
 
-            <div className="flex flex-col gap-2">
-              {locations.map((loc) => (
-                <div
-                  key={loc.id}
-                  className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs"
-                >
-                  <div>
-                    <span className="font-bold text-slate-800 block">{loc.name}</span>
-                    <span className="text-[10px] text-slate-400">
-                      {loc.latitude.toFixed(4)}, {loc.longitude.toFixed(4)}
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-extrabold text-[#ED0278] bg-[#ED0278]/10 px-2 py-0.5 rounded-full">
-                    Radius {loc.maxRadiusMeters}m
-                  </span>
+            <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-0.5">
+              {locations.length === 0 ? (
+                <div className="text-center py-4 text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  Belum ada lokasi kantor terdaftar.
                 </div>
-              ))}
+              ) : (
+                locations.map((loc) => (
+                  <div
+                    key={loc.id}
+                    className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs hover:border-pink-200 transition"
+                  >
+                    <div className="min-w-0 flex-1 pr-2">
+                      <span className="font-bold text-slate-800 block truncate">{loc.name}</span>
+                      <span className="text-[10px] text-slate-400 block truncate">
+                        {loc.latitude.toFixed(4)}, {loc.longitude.toFixed(4)} {loc.address ? `• ${loc.address}` : ''}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] font-extrabold text-[#ED0278] bg-[#ED0278]/10 px-2 py-0.5 rounded-full">
+                        Radius {loc.maxRadiusMeters}m
+                      </span>
+                      <button
+                        type="button"
+                        disabled={deleteLoadingId === loc.id}
+                        onClick={() => handleDeleteLocation(loc.id, loc.name)}
+                        className="w-6 h-6 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition cursor-pointer disabled:opacity-50"
+                        title="Hapus lokasi kantor"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Add Location Modal */}
+      <AddLocationModal
+        isOpen={isAddLocationOpen}
+        onClose={() => setIsAddLocationOpen(false)}
+        onSuccess={() => {
+          notify('Kantor baru berhasil didaftarkan ke sistem multi-hub', 'success');
+          fetchLocations();
+        }}
+      />
 
       {/* WhatsApp Modal */}
       <WhatsAppModal
