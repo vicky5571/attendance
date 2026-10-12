@@ -1,4 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
+import { initSchema } from './schema.ts';
 
 let runtimeDb: DatabaseSync | null = null;
 
@@ -17,6 +18,7 @@ export function createDatabase(location?: string): DatabaseSync {
 export function getDatabase(): DatabaseSync {
   if (!runtimeDb) {
     runtimeDb = createDatabase();
+    initSchema(runtimeDb);
   }
   return runtimeDb;
 }
