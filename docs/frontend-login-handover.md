@@ -143,7 +143,7 @@ Revokes the session in SQLite and clears the `ioh_session` cookie (`Max-Age=0`).
     }
     ```
   - Mount hook: Fetch `/api/auth/me` on initial load.
-- [ ] Wrap app root with `<AuthProvider>` in `src/app/layout.tsx`.
+- [x] Wrap app root with `<AuthProvider>` in `src/app/layout.tsx`.
 
 ---
 

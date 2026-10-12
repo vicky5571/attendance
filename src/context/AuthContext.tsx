@@ -85,10 +85,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) {
+    console.error('useAuth was called outside of an AuthProvider. Ensure <AuthProvider> wraps the application in layout.tsx.');
     return {
       user: null,
       role: null,
-      isLoading: true,
+      isLoading: false,
       isAuthenticated: false,
       loginAsIntern: async () => ({ success: false, error: 'AuthProvider not initialized' }),
       loginAsAdmin: async () => ({ success: false, error: 'AuthProvider not initialized' }),
