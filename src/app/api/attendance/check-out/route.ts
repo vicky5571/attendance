@@ -1,16 +1,19 @@
 import { getDatabase } from '../../../../lib/db/client.ts';
 import {
   getOfficeConfig,
+  getIntern,
   getAttendanceRecord,
   recordCheckOut,
 } from '../../../../lib/db/repo.ts';
 import { evaluateAttendanceRemarks } from '../../../../lib/geo.ts';
+import { verifyPin } from '../../../../lib/auth.ts';
 
 interface CheckOutPayload {
   internId: string;
   latitude?: number;
   longitude?: number;
   timestamp?: string;
+  pin?: string;
 }
 
 export async function POST(request: Request) {
@@ -25,6 +28,17 @@ export async function POST(request: Request) {
     }
 
     const db = getDatabase();
+
+    // 0. Anti-Proxy PIN Verification Guard
+    const intern = getIntern(db, body.internId);
+    if (intern && intern.pinHash) {
+      if (!body.pin || !verifyPin(body.pin, intern.pinHash)) {
+        return Response.json(
+          { error: 'PIN autentikasi tidak valid atau belum diisi' },
+          { status: 401 }
+        );
+      }
+    }
 
     // 1. Resolve date and time
     const dateObj = body.timestamp ? new Date(body.timestamp) : new Date();
