@@ -38,6 +38,23 @@ export default function AttendancePage() {
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+
+  const fetchPendingCount = () => {
+    fetch('/api/attendance/requests?status=PENDING')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const list = Array.isArray(data?.requests) ? data.requests : Array.isArray(data) ? data : [];
+        setPendingApprovalsCount(list.length);
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchPendingCount();
+    const interval = setInterval(fetchPendingCount, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // GPS state
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -304,8 +321,13 @@ export default function AttendancePage() {
           <button
             type="button"
             onClick={() => setApprovalModalOpen(true)}
-            className="flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
+            className="relative flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
           >
+            {pendingApprovalsCount > 0 && (
+              <span className="absolute -top-1.5 -right-1 bg-[#ED0278] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-md animate-pulse">
+                {pendingApprovalsCount}
+              </span>
+            )}
             <span className="text-base mb-0.5">🛡️</span>
             <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
               Persetujuan Mentor
@@ -377,6 +399,7 @@ export default function AttendancePage() {
         internName={activeIntern?.namaLengkap || 'Peserta'}
         onSuccess={() => {
           notify('Pengajuan berhasil dikirim ke mentor', 'success');
+          fetchPendingCount();
         }}
       />
 
@@ -396,6 +419,7 @@ export default function AttendancePage() {
         onActionComplete={() => {
           notify('Status permohonan berhasil diperbarui', 'success');
           syncAttendanceStatus();
+          fetchPendingCount();
         }}
       />
     </div>
