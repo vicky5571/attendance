@@ -124,6 +124,7 @@ export default function AttendancePage() {
     syncAttendanceStatus();
   }, [selectedId]);
 
+
   useEffect(() => {
     const pollWa = () =>
       fetch('/api/whatsapp/status')
