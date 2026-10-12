@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { parseGoogleMapsUrl } from '@/lib/gmaps-parser';
 
 interface AddLocationModalProps {
   isOpen: boolean;
@@ -49,7 +50,71 @@ export function AddLocationModal({ isOpen, onClose, onSuccess }: AddLocationModa
   const [detectingGps, setDetectingGps] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Google Maps link parser state
+  const [gmapsInput, setGmapsInput] = useState('');
+  const [parsingGmaps, setParsingGmaps] = useState(false);
+  const [gmapsSuccessMsg, setGmapsSuccessMsg] = useState('');
+
   if (!isOpen) return null;
+
+  const applyParsedCoordinates = (lat: number, lng: number, placeName?: string) => {
+    setLatitude(lat.toString());
+    setLongitude(lng.toString());
+    if (placeName && !name.trim()) {
+      setName(placeName);
+    }
+    setGmapsSuccessMsg(
+      placeName ? `Koordinat & nama "${placeName}" berhasil diambil!` : 'Koordinat berhasil diekstrak!'
+    );
+    setErrorMsg('');
+  };
+
+  const handleExtractGmaps = async (rawInput: string) => {
+    const trimmed = rawInput.trim();
+    if (!trimmed) {
+      setErrorMsg('Silakan masukkan link Google Maps atau koordinat terlebih dahulu.');
+      return;
+    }
+
+    setParsingGmaps(true);
+    setErrorMsg('');
+    setGmapsSuccessMsg('');
+
+    // 1. Direct synchronous extraction first
+    const direct = parseGoogleMapsUrl(trimmed);
+    if (direct) {
+      applyParsedCoordinates(direct.latitude, direct.longitude, direct.placeName);
+      setParsingGmaps(false);
+      return;
+    }
+
+    // 2. Fetch server API to follow short URL redirects (e.g. maps.app.goo.gl)
+    try {
+      const res = await fetch('/api/config/locations/parse-gmaps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: trimmed }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Gagal mengekstrak koordinat dari link Google Maps.');
+      }
+      applyParsedCoordinates(data.latitude, data.longitude, data.placeName);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Terjadi kesalahan saat membaca link.');
+    } finally {
+      setParsingGmaps(false);
+    }
+  };
+
+  const handleGmapsInputChange = (val: string) => {
+    setGmapsInput(val);
+    setGmapsSuccessMsg('');
+    const direct = parseGoogleMapsUrl(val.trim());
+    if (direct) {
+      applyParsedCoordinates(direct.latitude, direct.longitude, direct.placeName);
+    }
+  };
 
   const handleGetCurrentGps = () => {
     if (!navigator.geolocation) {
@@ -221,6 +286,44 @@ export function AddLocationModal({ isOpen, onClose, onSuccess }: AddLocationModa
               placeholder="Jl. Perintis Kemerdekaan No. 39, Medan"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-semibold focus:outline-none focus:border-[#ED0278] focus:bg-white transition"
             />
+          </div>
+
+          {/* Google Maps Link Extractor Card */}
+          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-[#ED0278]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                <span>Link Google Maps</span>
+              </label>
+              <span className="text-[10px] font-bold text-slate-400">Ekstrak Lat & Long Otomatis</span>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={gmapsInput}
+                onChange={(e) => handleGmapsInputChange(e.target.value)}
+                placeholder="Tempel link Google Maps (contoh: https://maps.app.goo.gl/...)"
+                className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs font-medium focus:outline-none focus:border-[#ED0278] transition"
+              />
+              <button
+                type="button"
+                disabled={parsingGmaps || !gmapsInput.trim()}
+                onClick={() => handleExtractGmaps(gmapsInput)}
+                className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-extrabold text-xs transition disabled:opacity-40 cursor-pointer shrink-0"
+              >
+                {parsingGmaps ? 'Mengekstrak...' : 'Ekstrak'}
+              </button>
+            </div>
+            {gmapsSuccessMsg && (
+              <div className="text-[11px] font-bold text-emerald-600 flex items-center gap-1.5 animate-fade-in">
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>{gmapsSuccessMsg}</span>
+              </div>
+            )}
           </div>
 
           {/* GPS Coordinates Header & Auto-Detect Button */}
