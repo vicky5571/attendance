@@ -35,4 +35,24 @@ describe('Database Seeder', () => {
     const internsAfter = listInterns(db);
     assert.equal(internsAfter.length, interns.length);
   });
+
+  it('should seed default interns with valid corporate email and password hashes', async () => {
+    const { getIntern } = await import('../src/lib/db/repo.ts');
+    const { verifyPassword } = await import('../src/lib/auth.ts');
+    const db = createDatabase(':memory:');
+    initSchema(db);
+    seedDatabase(db);
+
+    const sarah = getIntern(db, 'intern-sarah');
+    assert.ok(sarah, 'Sarah must be seeded');
+    assert.equal(sarah.email, 'sarah@ioh.co.id');
+    assert.ok(sarah.passwordHash, 'Sarah must have passwordHash');
+    assert.ok(verifyPassword('InternIOH2026!', sarah.passwordHash), 'Password hash must verify with InternIOH2026!');
+
+    const zacky = getIntern(db, 'intern-zacky');
+    assert.ok(zacky, 'Zacky must be seeded');
+    assert.equal(zacky.email, 'zacky@ioh.co.id');
+    assert.ok(zacky.passwordHash, 'Zacky must have passwordHash');
+    assert.ok(verifyPassword('InternIOH2026!', zacky.passwordHash), 'Password hash must verify with InternIOH2026!');
+  });
 });
