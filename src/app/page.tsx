@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { Header } from '@/components/Header';
 import { ProfileCard } from '@/components/ProfileCard';
 import { RadarCard } from '@/components/RadarCard';
@@ -14,15 +16,15 @@ import { calculateDistance, isWithinRadius } from '@/lib/client-geo';
 import {
   saveAttendanceCache,
   getAttendanceCache,
-  saveSelectedInternId,
-  getSelectedInternId,
 } from '@/lib/client-storage';
 import type { OfficeConfig, InternProfile, OfficeLocation } from '@/types';
 
 export default function AttendancePage() {
+  const router = useRouter();
+  const { user, isAuthenticated, isLoading } = useAuth();
+
   const [config, setConfig] = useState<OfficeConfig | null>(null);
   const [interns, setInterns] = useState<InternProfile[]>([]);
-  const [selectedId, setSelectedId] = useState('intern-sarah');
   const [locations, setLocations] = useState<OfficeLocation[]>([]);
   const [selectedLocationId, setSelectedLocationId] = useState('loc-kppti');
 
@@ -40,6 +42,14 @@ export default function AttendancePage() {
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
 
+  // Route Authentication Guard
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  // Fetch pending approvals count (if admin / mentor)
   const fetchPendingCount = () => {
     fetch('/api/attendance/requests?status=PENDING')
       .then((r) => (r.ok ? r.json() : null))
@@ -66,7 +76,6 @@ export default function AttendancePage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [records, setRecords] = useState<{ in?: string; out?: string; remarks?: string }>({});
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
-
   const [todayStr, setTodayStr] = useState<string>('');
 
   const notify = (msg: string, type: 'success' | 'error' = 'success') => {
@@ -74,11 +83,8 @@ export default function AttendancePage() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  // Restore remembered intern on initial mount
-  useEffect(() => {
-    const saved = getSelectedInternId('intern-sarah');
-    if (saved) setSelectedId(saved);
-  }, []);
+  // Determine active intern ID (Locked to authenticated user)
+  const currentInternId = user?.id || 'intern-sarah';
 
   // Fetch initial config, locations, & intern master data
   useEffect(() => {
@@ -101,14 +107,14 @@ export default function AttendancePage() {
     });
   }, []);
 
-  // Sync attendance state on intern change (Offline-first: cache -> remote API)
+  // Sync attendance state on authenticated intern
   const syncAttendanceStatus = () => {
-    if (!selectedId) return;
+    if (!currentInternId) return;
     const today = new Date().toISOString().split('T')[0];
     setTodayStr(today);
 
     // 1. Instant optimistic restore from local storage cache
-    const cached = getAttendanceCache(selectedId, today);
+    const cached = getAttendanceCache(currentInternId, today);
     if (cached) {
       setRecords({ in: cached.in, out: cached.out, remarks: cached.remarks });
     } else {
@@ -116,7 +122,7 @@ export default function AttendancePage() {
     }
 
     // 2. Query ground truth from server API
-    fetch(`/api/attendance/status?internId=${encodeURIComponent(selectedId)}&date=${today}`)
+    fetch(`/api/attendance/status?internId=${encodeURIComponent(currentInternId)}&date=${today}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.record) {
@@ -124,7 +130,7 @@ export default function AttendancePage() {
           const outTime = data.record.checkOutTime ? data.record.checkOutTime.slice(0, 5) : undefined;
           const newRec = { in: inTime, out: outTime, remarks: data.record.remarks };
           setRecords(newRec);
-          saveAttendanceCache(selectedId, today, {
+          saveAttendanceCache(currentInternId, today, {
             ...newRec,
             status: data.record.status,
           });
@@ -138,9 +144,10 @@ export default function AttendancePage() {
   };
 
   useEffect(() => {
-    syncAttendanceStatus();
-  }, [selectedId]);
-
+    if (isAuthenticated && user) {
+      syncAttendanceStatus();
+    }
+  }, [isAuthenticated, user?.id]);
 
   useEffect(() => {
     const pollWa = () =>
@@ -149,66 +156,63 @@ export default function AttendancePage() {
         .then(setWa)
         .catch(() => {});
     pollWa();
-    const interval = setInterval(pollWa, 4000);
+    const interval = setInterval(pollWa, 6000);
     return () => clearInterval(interval);
   }, []);
 
+  // Geofence target calculation
   const activeLocation = locations.find((l) => l.id === selectedLocationId);
-  const targetLat = activeLocation?.latitude ?? config?.targetLatitude ?? -6.180495;
-  const targetLng = activeLocation?.longitude ?? config?.targetLongitude ?? 106.822769;
-  const maxRadius = activeLocation?.maxRadiusMeters ?? config?.maxRadiusMeters ?? 50;
-  const isWithin = isWithinRadius(distance, maxRadius);
+  const targetLat = activeLocation ? activeLocation.latitude : config?.targetLatitude ?? -6.1822;
+  const targetLng = activeLocation ? activeLocation.longitude : config?.targetLongitude ?? 106.8228;
+  const maxRadius = activeLocation ? activeLocation.maxRadiusMeters : config?.maxRadiusMeters ?? 100;
 
-  const handleSelectIntern = (id: string) => {
-    setSelectedId(id);
-    saveSelectedInternId(id);
-  };
+  const isWithin = distance !== null ? isWithinRadius(distance, maxRadius) : false;
 
-  const handleLocationChange = (locId: string) => {
-    setSelectedLocationId(locId);
-    const loc = locations.find((l) => l.id === locId);
-    if (loc && isSimulated) {
-      setCoords({ lat: loc.latitude, lng: loc.longitude });
-      setDistance(0);
-      notify(`Lokasi kerja diubah ke: ${loc.name}`, 'success');
-    } else if (loc && coords) {
-      const d = calculateDistance(coords.lat, coords.lng, loc.latitude, loc.longitude);
-      setDistance(d);
+  const handleLocationChange = (newLocationId: string) => {
+    setSelectedLocationId(newLocationId);
+    const loc = locations.find((l) => l.id === newLocationId);
+    if (loc) {
+      if (isSimulated) {
+        setCoords({ lat: loc.latitude, lng: loc.longitude });
+        setDistance(0);
+      } else if (coords) {
+        const d = calculateDistance(coords.lat, coords.lng, loc.latitude, loc.longitude);
+        setDistance(d);
+      }
     }
   };
 
+  const handleSimulate = () => {
+    setIsSimulated(true);
+    setCoords({ lat: targetLat, lng: targetLng });
+    setDistance(0);
+    notify('Mode Simulasi KPPTI: Berada di dalam radius kantor', 'success');
+  };
+
   const handleRealGps = () => {
-    if (!navigator.geolocation) return notify('Geolocation tidak didukung browser', 'error');
+    if (!navigator.geolocation) {
+      notify('Geolocation tidak didukung oleh browser Anda', 'error');
+      return;
+    }
     setGpsLoading(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
         setCoords({ lat: latitude, lng: longitude });
         setIsSimulated(false);
-        setDistance(calculateDistance(latitude, longitude, targetLat, targetLng));
+        const d = calculateDistance(latitude, longitude, targetLat, targetLng);
+        setDistance(d);
         setGpsLoading(false);
-        notify('Titik GPS asli terdeteksi', 'success');
+        notify(`GPS Aktif: Berjarak ${d}m dari ${activeLocation?.name || 'Kantor'}`, 'success');
       },
-      (err) => {
+      () => {
         setGpsLoading(false);
-        notify(`Gagal GPS: ${err.message}`, 'error');
+        notify('Gagal membaca lokasi GPS fisik perangkat', 'error');
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
-  const handleSimulate = () => {
-    setCoords({ lat: targetLat, lng: targetLng });
-    setDistance(0);
-    setIsSimulated(true);
-    notify(`Simulasi: Berada tepat di titik kantor (0 m)`, 'success');
-  };
-
-  // Trigger PIN Modal before submitting
   const initiateAttendance = (type: 'check-in' | 'check-out') => {
     if (!coords) return notify('Koordinat GPS belum siap', 'error');
     if (!isWithin) return notify(`Di luar radius batas geofence (${maxRadius}m)`, 'error');
@@ -216,7 +220,7 @@ export default function AttendancePage() {
     setPinModalOpen(true);
   };
 
-  // Submit check-in or check-out with verified PIN
+  // Submit check-in or check-out with verified PIN for the authenticated intern
   const executeAttendanceWithPin = async (pin: string): Promise<boolean> => {
     if (!coords || !pendingActionType) return false;
     setActionLoading(true);
@@ -225,7 +229,7 @@ export default function AttendancePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          internId: selectedId,
+          internId: currentInternId,
           latitude: coords.lat,
           longitude: coords.lng,
           pin,
@@ -241,14 +245,13 @@ export default function AttendancePage() {
           : { ...records, out: now, remarks: serverRemarks };
         setRecords(updated);
         const currentDate = todayStr || new Date().toISOString().split('T')[0];
-        saveAttendanceCache(selectedId, currentDate, updated);
+        saveAttendanceCache(currentInternId, currentDate, updated);
         notify(`Berhasil ${pendingActionType === 'check-in' ? 'Check-In' : 'Check-Out'}!`, 'success');
         setPinModalOpen(false);
         setPendingActionType(null);
         setActionLoading(false);
         return true;
       } else {
-        // Return false to trigger PIN shake
         setActionLoading(false);
         return false;
       }
@@ -268,7 +271,34 @@ export default function AttendancePage() {
     }
   };
 
-  const activeIntern = interns.find((i) => i.id === selectedId) || interns[0];
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#ED0278] animate-ping" />
+          <span className="text-xs font-bold text-slate-500">Memeriksa sesi login...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return null;
+  }
+
+  const activeIntern = interns.find((i) => i.id === currentInternId) || {
+    id: user.id,
+    namaLengkap: user.name,
+    divisi: user.divisi || 'Digital Transformation',
+    universitas: 'Universitas Indonesia',
+    jurusan: 'Teknologi Informasi',
+    namaMentor: 'Bambang Supriyanto',
+    emailMentor: 'bambang.mentor@ioh.co.id',
+    periodeMagangSelesai: '2026-12-31',
+    status: 'ACTIVE' as const,
+  };
+
+  const isSupervisorOrAdmin = user.role === 'ADMIN' || user.role === 'SUPERVISOR';
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-slate-900 flex flex-col items-center p-4 sm:p-6 font-sans">
@@ -287,15 +317,15 @@ export default function AttendancePage() {
 
       {/* Main Container Wrapper */}
       <div className="w-full max-w-md flex flex-col gap-4">
-        {/* Header App */}
+        {/* Header App with Session Badge & Logout */}
         <Header
-          internName={activeIntern?.namaLengkap || 'Peserta Magang'}
+          internName={activeIntern?.namaLengkap || user.name}
           waStatus={wa.status}
           onOpenWaModal={() => setIsWaModalOpen(true)}
         />
 
         {/* Enterprise Quick-Action Toolbar */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className={`grid ${isSupervisorOrAdmin ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
           <button
             type="button"
             onClick={() => setRequestModalOpen(true)}
@@ -318,28 +348,30 @@ export default function AttendancePage() {
             </span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setApprovalModalOpen(true)}
-            className="relative flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
-          >
-            {pendingApprovalsCount > 0 && (
-              <span className="absolute -top-1.5 -right-1 bg-[#ED0278] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-md animate-pulse">
-                {pendingApprovalsCount}
+          {isSupervisorOrAdmin && (
+            <button
+              type="button"
+              onClick={() => setApprovalModalOpen(true)}
+              className="relative flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
+            >
+              {pendingApprovalsCount > 0 && (
+                <span className="absolute -top-1.5 -right-1 bg-[#ED0278] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-md animate-pulse">
+                  {pendingApprovalsCount}
+                </span>
+              )}
+              <span className="text-base mb-0.5">🛡️</span>
+              <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
+                Persetujuan Mentor
               </span>
-            )}
-            <span className="text-base mb-0.5">🛡️</span>
-            <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
-              Persetujuan Mentor
-            </span>
-          </button>
+            </button>
+          )}
         </div>
 
-        {/* Profile Card */}
+        {/* Locked Profile Card (Impersonation Prevented) */}
         <ProfileCard
           interns={interns}
-          selectedId={selectedId}
-          onSelect={handleSelectIntern}
+          selectedId={currentInternId}
+          locked={true}
         />
 
         {/* Radar Geofence Card with Multi-Hub Locations */}
@@ -395,7 +427,7 @@ export default function AttendancePage() {
       <RequestModal
         isOpen={requestModalOpen}
         onClose={() => setRequestModalOpen(false)}
-        internId={selectedId}
+        internId={currentInternId}
         internName={activeIntern?.namaLengkap || 'Peserta'}
         onSuccess={() => {
           notify('Pengajuan berhasil dikirim ke mentor', 'success');
@@ -407,21 +439,23 @@ export default function AttendancePage() {
       <HistoryModal
         isOpen={historyModalOpen}
         onClose={() => setHistoryModalOpen(false)}
-        internId={selectedId}
+        internId={currentInternId}
         internName={activeIntern?.namaLengkap || 'Peserta'}
       />
 
       {/* Mentor Approval Dashboard Modal */}
-      <MentorApprovalModal
-        isOpen={approvalModalOpen}
-        onClose={() => setApprovalModalOpen(false)}
-        interns={interns}
-        onActionComplete={() => {
-          notify('Status permohonan berhasil diperbarui', 'success');
-          syncAttendanceStatus();
-          fetchPendingCount();
-        }}
-      />
+      {isSupervisorOrAdmin && (
+        <MentorApprovalModal
+          isOpen={approvalModalOpen}
+          onClose={() => setApprovalModalOpen(false)}
+          interns={interns}
+          onActionComplete={() => {
+            notify('Status permohonan berhasil diperbarui', 'success');
+            syncAttendanceStatus();
+            fetchPendingCount();
+          }}
+        />
+      )}
     </div>
   );
 }

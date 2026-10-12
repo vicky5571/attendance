@@ -6,10 +6,11 @@ import type { InternProfile } from '@/types';
 interface ProfileCardProps {
   interns: InternProfile[];
   selectedId: string;
-  onSelect: (id: string) => void;
+  onSelect?: (id: string) => void;
+  locked?: boolean;
 }
 
-export function ProfileCard({ interns, selectedId, onSelect }: ProfileCardProps) {
+export function ProfileCard({ interns, selectedId, onSelect, locked = false }: ProfileCardProps) {
   const active = interns.find((i) => i.id === selectedId) || interns[0];
 
   return (
@@ -31,18 +32,25 @@ export function ProfileCard({ interns, selectedId, onSelect }: ProfileCardProps)
           </span>
         </div>
 
-        {/* Switch Dropdown */}
-        <select
-          value={selectedId}
-          onChange={(e) => onSelect(e.target.value)}
-          className="text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-full px-3 py-1 outline-none cursor-pointer hover:border-[#ED0278] transition"
-        >
-          {interns.map((i) => (
-            <option key={i.id} value={i.id}>
-              {i.namaLengkap}
-            </option>
-          ))}
-        </select>
+        {/* Locked Identity Badge vs Switch Dropdown */}
+        {locked || !onSelect ? (
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 border border-slate-200/80 text-[11px] font-extrabold text-slate-700 shadow-2xs">
+            <span className="text-[#ED0278]">🔒</span>
+            <span>ID: {active?.id || selectedId}</span>
+          </div>
+        ) : (
+          <select
+            value={selectedId}
+            onChange={(e) => onSelect(e.target.value)}
+            className="text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-full px-3 py-1 outline-none cursor-pointer hover:border-[#ED0278] transition"
+          >
+            {interns.map((i) => (
+              <option key={i.id} value={i.id}>
+                {i.namaLengkap}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Profil Detail */}
