@@ -11,6 +11,7 @@ interface AttendanceActionsProps {
   savedRemarks?: string;
   workStartTime?: string;
   workEndTime?: string;
+  simulatedTimeStr?: string;
   onCheckIn: () => void;
   onCheckOut: () => void;
 }
@@ -23,6 +24,7 @@ export function AttendanceActions({
   savedRemarks,
   workStartTime = '08:30',
   workEndTime = '17:30',
+  simulatedTimeStr,
   onCheckIn,
   onCheckOut,
 }: AttendanceActionsProps) {
@@ -42,8 +44,10 @@ export function AttendanceActions({
     return () => clearInterval(interval);
   }, []);
 
+  const effectiveTimeStr = simulatedTimeStr || currentTimeStr;
+
   const livePreview = computeLiveRemarkPreview(
-    currentTimeStr,
+    effectiveTimeStr,
     isCheckedIn,
     isCompleted,
     workStartTime,
@@ -63,7 +67,16 @@ export function AttendanceActions({
                   : 'bg-amber-500 animate-pulse'
               }`}
             />
-            <span>Estimasi Status:</span>
+            <span>
+              Estimasi Status
+              {simulatedTimeStr ? (
+                <span className="ml-1 text-[10px] text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">
+                  Simulasi {simulatedTimeStr}
+                </span>
+              ) : (
+                ':'
+              )}
+            </span>
           </div>
           <div
             className={`font-extrabold flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] ${

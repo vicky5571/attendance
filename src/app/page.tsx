@@ -13,10 +13,12 @@ import { RequestModal } from '@/components/RequestModal';
 import { HistoryModal } from '@/components/HistoryModal';
 import { MentorApprovalModal } from '@/components/MentorApprovalModal';
 import { ChangeOfficeModal } from '@/components/ChangeOfficeModal';
+import { DevTimeBar } from '@/components/dev/DevTimeBar';
 import { calculateDistance, isWithinRadius } from '@/lib/client-geo';
 import {
   saveAttendanceCache,
   getAttendanceCache,
+  removeAttendanceCache,
   saveSelectedOffice,
   getSelectedOffice,
 } from '@/lib/client-storage';
@@ -87,6 +89,11 @@ export default function AttendancePage() {
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [todayStr, setTodayStr] = useState<string>('');
 
+  // Simulated time and date for development mode testing
+  const [simulatedTime, setSimulatedTime] = useState<string | null>(null);
+  const [simulatedDate, setSimulatedDate] = useState<string | null>(null);
+  const [isResettingAttendance, setIsResettingAttendance] = useState(false);
+
   const notify = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
@@ -123,13 +130,13 @@ export default function AttendancePage() {
   }, []);
 
   // Sync attendance state on authenticated intern
-  const syncAttendanceStatus = () => {
+  const syncAttendanceStatus = (targetDateOverride?: string) => {
     if (!currentInternId) return;
-    const today = new Date().toISOString().split('T')[0];
-    setTodayStr(today);
+    const activeDate = targetDateOverride || simulatedDate || new Date().toISOString().split('T')[0];
+    setTodayStr(activeDate);
 
     // 1. Instant optimistic restore from local storage cache
-    const cached = getAttendanceCache(currentInternId, today);
+    const cached = getAttendanceCache(currentInternId, activeDate);
     if (cached) {
       setRecords({ in: cached.in, out: cached.out, remarks: cached.remarks });
     } else {
@@ -137,7 +144,7 @@ export default function AttendancePage() {
     }
 
     // 2. Query ground truth from server API
-    fetch(`/api/attendance/status?internId=${encodeURIComponent(currentInternId)}&date=${today}`)
+    fetch(`/api/attendance/status?internId=${encodeURIComponent(currentInternId)}&date=${activeDate}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.record) {
@@ -145,11 +152,11 @@ export default function AttendancePage() {
           const outTime = data.record.checkOutTime ? data.record.checkOutTime.slice(0, 5) : undefined;
           const newRec = { in: inTime, out: outTime, remarks: data.record.remarks };
           setRecords(newRec);
-          saveAttendanceCache(currentInternId, today, {
+          saveAttendanceCache(currentInternId, activeDate, {
             ...newRec,
             status: data.record.status,
           });
-        } else if (!cached) {
+        } else {
           setRecords({});
         }
       })
@@ -160,9 +167,31 @@ export default function AttendancePage() {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      syncAttendanceStatus();
+      syncAttendanceStatus(simulatedDate || undefined);
     }
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user?.id, simulatedDate]);
+
+  const handleResetTodayAttendance = async () => {
+    const activeDate = simulatedDate || todayStr || new Date().toISOString().split('T')[0];
+    setIsResettingAttendance(true);
+    try {
+      const res = await fetch(
+        `/api/attendance/status?internId=${encodeURIComponent(currentInternId)}&date=${activeDate}`,
+        { method: 'DELETE' }
+      );
+      if (res.ok) {
+        removeAttendanceCache(currentInternId, activeDate);
+        setRecords({});
+        notify(`Status absensi ${activeDate} berhasil di-reset untuk pengujian ulang`, 'success');
+      } else {
+        notify('Gagal mereset status absensi', 'error');
+      }
+    } catch {
+      notify('Koneksi server gagal', 'error');
+    } finally {
+      setIsResettingAttendance(false);
+    }
+  };
 
   useEffect(() => {
     const pollWa = () =>
@@ -252,6 +281,9 @@ export default function AttendancePage() {
   const executeAttendanceWithPin = async (pin: string): Promise<boolean> => {
     if (!coords || !pendingActionType) return false;
     setActionLoading(true);
+    const targetDate = simulatedDate || todayStr || new Date().toISOString().split('T')[0];
+    const timestampPayload = simulatedTime ? `${targetDate}T${simulatedTime}:00` : undefined;
+
     try {
       const res = await fetch(`/api/attendance/${pendingActionType}`, {
         method: 'POST',
@@ -262,24 +294,39 @@ export default function AttendancePage() {
           longitude: coords.lng,
           pin,
           locationId: selectedLocationId,
+          timestamp: timestampPayload,
         }),
       });
       const data = await res.json();
       if (res.ok) {
+        const rawCheckIn = data.checkInTime || data.record?.checkInTime;
+        const rawCheckOut = data.checkOutTime || data.record?.checkOutTime;
         const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-        const serverRemarks = data.record?.remarks || (pendingActionType === 'check-in' ? 'Tepat Waktu' : records.remarks);
-        const updated = pendingActionType === 'check-in'
-          ? { ...records, in: now, remarks: serverRemarks }
-          : { ...records, out: now, remarks: serverRemarks };
+
+        const recordedTime =
+          (pendingActionType === 'check-in' ? rawCheckIn : rawCheckOut)?.slice(0, 5) ||
+          simulatedTime ||
+          now;
+
+        const serverRemarks =
+          data.remarks ||
+          data.record?.remarks ||
+          (pendingActionType === 'check-in' ? 'Tepat Waktu' : records.remarks);
+
+        const updated =
+          pendingActionType === 'check-in'
+            ? { ...records, in: recordedTime, remarks: serverRemarks }
+            : { ...records, out: recordedTime, remarks: serverRemarks };
+
         setRecords(updated);
-        const currentDate = todayStr || new Date().toISOString().split('T')[0];
-        saveAttendanceCache(currentInternId, currentDate, updated);
+        saveAttendanceCache(currentInternId, targetDate, updated);
         notify(`Berhasil ${pendingActionType === 'check-in' ? 'Check-In' : 'Check-Out'}!`, 'success');
         setPinModalOpen(false);
         setPendingActionType(null);
         setActionLoading(false);
         return true;
       } else {
+        notify(data.error || 'Autentikasi absensi gagal', 'error');
         setActionLoading(false);
         return false;
       }
@@ -351,6 +398,18 @@ export default function AttendancePage() {
           waStatus={wa.status}
           onOpenWaModal={() => setIsWaModalOpen(true)}
         />
+
+        {/* Development Mode Time Manipulation & Reset Toolbar */}
+        {process.env.NODE_ENV !== 'production' && (
+          <DevTimeBar
+            simulatedTime={simulatedTime}
+            simulatedDate={simulatedDate}
+            onSetSimulatedTime={setSimulatedTime}
+            onSetSimulatedDate={setSimulatedDate}
+            onResetTodayAttendance={handleResetTodayAttendance}
+            isResetting={isResettingAttendance}
+          />
+        )}
 
         {/* Enterprise Quick-Action Toolbar */}
         <div className={`grid ${isSupervisorOrAdmin ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
@@ -433,6 +492,7 @@ export default function AttendancePage() {
           savedRemarks={records.remarks}
           workStartTime={config?.workStartTime}
           workEndTime={config?.workEndTime}
+          simulatedTimeStr={simulatedTime || undefined}
           onCheckIn={() => initiateAttendance('check-in')}
           onCheckOut={() => initiateAttendance('check-out')}
         />

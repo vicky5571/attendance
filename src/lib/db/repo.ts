@@ -295,3 +295,8 @@ export function listAttendanceByDate(db: DatabaseSync, date: string): Attendance
   const rows = stmt.all(date) as unknown as AttendanceRow[];
   return rows.map(mapAttendanceRow);
 }
+
+export function deleteAttendanceRecord(db: DatabaseSync, internId: string, date: string): void {
+  const stmt = db.prepare('DELETE FROM attendance_logs WHERE intern_id = ? AND date = ?');
+  stmt.run(internId, date);
+}

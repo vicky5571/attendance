@@ -83,6 +83,17 @@ export function getAttendanceCache(
 }
 
 /**
+ * Removes attendance record from local storage cache.
+ */
+export function removeAttendanceCache(
+  internId: string,
+  date: string
+): void {
+  const key = `${STORAGE_PREFIX}record_${internId}_${date}`;
+  removeItem(key);
+}
+
+/**
  * Persists the user's chosen intern selection across browser refreshes.
  */
 export function saveSelectedInternId(internId: string): void {
