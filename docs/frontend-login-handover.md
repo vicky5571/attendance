@@ -116,11 +116,11 @@ Revokes the session in SQLite and clears the `ioh_session` cookie (`Max-Age=0`).
 
 ## 3. Pre-Seeded Development Credentials
 
-| Role | Username / ID | Email | Credential |
-| :--- | :--- | :--- | :--- |
-| **Intern** | `intern-sarah` | `sarah@ioh.co.id` | PIN: **`123456`** |
-| **Intern** | `intern-zacky` | `mentor.vicky@indosat.com` | PIN: **`123456`** |
-| **Admin** | `admin` | `admin@ioh.co.id` | Password: **`AdminIOH2026!`** |
+| Role | Username / ID | Email | Password | Punch PIN |
+| :--- | :--- | :--- | :--- | :--- |
+| **Intern** | `intern-sarah` | `sarah@ioh.co.id` | **`InternIOH2026!`** | `123456` |
+| **Intern** | `intern-zacky` | `zacky@ioh.co.id` | **`InternIOH2026!`** | `123456` |
+| **Admin** | `admin` | `admin@ioh.co.id` | **`AdminIOH2026!`** | N/A |
 
 ---
 
