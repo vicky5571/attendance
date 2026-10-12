@@ -35,7 +35,9 @@ export function ProfileCard({ interns, selectedId, onSelect, locked = false }: P
         {/* Locked Identity Badge vs Switch Dropdown */}
         {locked || !onSelect ? (
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 border border-slate-200/80 text-[11px] font-extrabold text-slate-700 shadow-2xs">
-            <span className="text-[#ED0278]">🔒</span>
+            <svg className="w-3.5 h-3.5 text-[#ED0278]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
             <span>ID: {active?.id || selectedId}</span>
           </div>
         ) : (

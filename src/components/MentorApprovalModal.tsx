@@ -90,9 +90,11 @@ export function MentorApprovalModal({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 font-black cursor-pointer transition"
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer transition"
           >
-            ✕
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
@@ -156,10 +158,10 @@ export function MentorApprovalModal({
                     }`}
                   >
                     {req.status === 'APPROVED'
-                      ? '✓ Approved'
+                      ? 'Approved'
                       : req.status === 'REJECTED'
-                      ? '✕ Rejected'
-                      : '⏳ Pending'}
+                      ? 'Rejected'
+                      : 'Pending'}
                   </span>
                 </div>
 

@@ -131,8 +131,8 @@ describe('Daily Attendance Recap with Leave & Remote Work Integration', () => {
     const recap = aggregateDailyRecap(db, '2026-10-09');
     const msg = formatDailyInternsReport(recap);
 
-    assert.ok(msg.includes('WFH') || msg.includes('🏡'));
-    assert.ok(msg.includes('SAKIT') || msg.includes('🏥'));
+    assert.ok(msg.includes('WFH'));
+    assert.ok(msg.includes('SAKIT'));
   });
 
   it('should generate valid HTML recap table containing leave badges', () => {

@@ -99,11 +99,13 @@ export function Header({ internName, waStatus, onOpenWaModal }: HeaderProps) {
             <button
               type="button"
               onClick={() => logout()}
-              className="flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-rose-600 transition px-2 py-1 rounded-lg hover:bg-rose-50 cursor-pointer"
+              className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 hover:text-rose-600 transition px-2 py-1 rounded-lg hover:bg-rose-50 cursor-pointer"
               title="Keluar dari sesi"
             >
               <span>Keluar</span>
-              <span className="text-xs">➔</span>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
             </button>
           </div>
         </div>

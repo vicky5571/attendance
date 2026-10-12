@@ -329,9 +329,11 @@ export default function AttendancePage() {
           <button
             type="button"
             onClick={() => setRequestModalOpen(true)}
-            className="flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
+            className="flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center group"
           >
-            <span className="text-base mb-0.5">✍️</span>
+            <svg className="w-4 h-4 mb-1 text-slate-600 group-hover:text-[#ED0278] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
             <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
               Izin / WFH
             </span>
@@ -340,11 +342,13 @@ export default function AttendancePage() {
           <button
             type="button"
             onClick={() => setHistoryModalOpen(true)}
-            className="flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
+            className="flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center group"
           >
-            <span className="text-base mb-0.5">📊</span>
+            <svg className="w-4 h-4 mb-1 text-slate-600 group-hover:text-[#ED0278] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
             <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
-              Timesheet & CSV
+              Timesheet &amp; CSV
             </span>
           </button>
 
@@ -352,14 +356,16 @@ export default function AttendancePage() {
             <button
               type="button"
               onClick={() => setApprovalModalOpen(true)}
-              className="relative flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
+              className="relative flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center group"
             >
               {pendingApprovalsCount > 0 && (
                 <span className="absolute -top-1.5 -right-1 bg-[#ED0278] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-md animate-pulse">
                   {pendingApprovalsCount}
                 </span>
               )}
-              <span className="text-base mb-0.5">🛡️</span>
+              <svg className="w-4 h-4 mb-1 text-slate-600 group-hover:text-[#ED0278] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
               <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
                 Persetujuan Mentor
               </span>

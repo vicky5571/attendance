@@ -110,9 +110,11 @@ export function RequestModal({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 font-black cursor-pointer transition"
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer transition"
           >
-            ✕
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
@@ -121,13 +123,16 @@ export function RequestModal({
           <button
             type="button"
             onClick={() => setActiveTab('form')}
-            className={`flex-1 py-2 rounded-xl transition cursor-pointer ${
+            className={`flex-1 py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
               activeTab === 'form'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            ✍️ Buat Pengajuan
+            <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            <span>Buat Pengajuan</span>
           </button>
           <button
             type="button"
@@ -135,13 +140,16 @@ export function RequestModal({
               setActiveTab('history');
               fetchRequests();
             }}
-            className={`flex-1 py-2 rounded-xl transition cursor-pointer ${
+            className={`flex-1 py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
               activeTab === 'history'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            📋 Riwayat ({requests.length})
+            <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span>Riwayat ({requests.length})</span>
           </button>
         </div>
 
@@ -269,10 +277,10 @@ export function RequestModal({
                         }`}
                       >
                         {req.status === 'APPROVED'
-                          ? '✓ Disetujui'
+                          ? 'Disetujui'
                           : req.status === 'REJECTED'
-                          ? '✕ Ditolak'
-                          : '⏳ Menunggu'}
+                          ? 'Ditolak'
+                          : 'Menunggu'}
                       </span>
                     </div>
                     <p className="text-xs text-slate-600 italic">"{req.reason}"</p>

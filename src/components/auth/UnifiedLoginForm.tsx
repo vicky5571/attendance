@@ -181,7 +181,9 @@ export function UnifiedLoginForm({ onSuccess }: UnifiedLoginFormProps) {
                 Magang
               </span>
               {activePreset === 'sarah' && (
-                <span className="text-[10px] text-pink-600 font-bold">✓</span>
+                <svg className="w-3 h-3 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
               )}
             </div>
             <span className="text-[11px] font-extrabold text-slate-800 leading-tight">Sarah N.</span>
@@ -203,7 +205,9 @@ export function UnifiedLoginForm({ onSuccess }: UnifiedLoginFormProps) {
                 Admin
               </span>
               {activePreset === 'admin' && (
-                <span className="text-[10px] text-pink-600 font-bold">✓</span>
+                <svg className="w-3 h-3 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
               )}
             </div>
             <span className="text-[11px] font-extrabold text-slate-800 leading-tight">Supervisor</span>

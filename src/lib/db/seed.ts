@@ -131,5 +131,5 @@ export function seedDatabase(db: DatabaseSync): void {
 if (process.argv[1]?.endsWith('seed.ts') || process.argv[1]?.endsWith('seed.js')) {
   const db = getDatabase();
   seedDatabase(db);
-  console.log('✅ SQLite database seeded successfully.');
+  console.log('[OK] SQLite database seeded successfully.');
 }
