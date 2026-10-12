@@ -18,9 +18,10 @@ export function InternLoginForm({ interns, onSuccess }: InternLoginFormProps) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [shake, setShake] = useState(false);
+  const [isFocused, setIsFocused] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Focus input on initial mount for PC/laptop users
+  // Focus input on mount for laptop/PC users
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
@@ -69,7 +70,6 @@ export function InternLoginForm({ interns, onSuccess }: InternLoginFormProps) {
   // Keyboard shortcut listener for PC / Laptop
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // If user is interacting with select dropdown, let native select work
       if (document.activeElement?.tagName === 'SELECT') {
         return;
       }
@@ -129,16 +129,20 @@ export function InternLoginForm({ interns, onSuccess }: InternLoginFormProps) {
         </div>
       </div>
 
-      {/* PIN Prompt */}
-      <p className="text-xs font-bold text-slate-600 text-center mb-0.5">
+      {/* PIN Prompt Header */}
+      <p className="text-xs font-bold text-slate-700 text-center mb-0.5">
         Masukkan 6-Digit PIN Anda
       </p>
-      <span className="text-[10px] text-slate-400 text-center mb-3">
+      <span className="text-[10px] text-slate-400 text-center mb-4">
         Default: <strong className="text-slate-700 font-mono">123456</strong>
       </span>
 
-      {/* Keyboard Direct Input Box (for PC / Laptop) */}
-      <div className="relative w-full max-w-[260px] mb-3">
+      {/* 6-Cell Interactive PIN Display with Hidden Keyboard Input */}
+      <div
+        onClick={() => inputRef.current?.focus()}
+        className="relative cursor-pointer flex flex-col items-center mb-4 group"
+      >
+        {/* Invisible Native Input (Captures Physical Keyboard & Mobile typing) */}
         <input
           ref={inputRef}
           type="password"
@@ -146,7 +150,6 @@ export function InternLoginForm({ interns, onSuccess }: InternLoginFormProps) {
           pattern="[0-9]*"
           maxLength={6}
           value={pin}
-          placeholder="Ketik PIN di sini..."
           onChange={(e) => {
             const val = e.target.value.replace(/\D/g, '').slice(0, 6);
             setPin(val);
@@ -155,35 +158,52 @@ export function InternLoginForm({ interns, onSuccess }: InternLoginFormProps) {
               triggerSubmit(selectedId, val);
             }
           }}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           disabled={loading}
-          className="w-full text-center tracking-[0.4em] font-mono text-base font-black py-2 px-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:border-[#ED0278] transition shadow-2xs text-slate-800"
+          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+          autoComplete="off"
         />
-        <div className="text-[10px] text-slate-400 text-center mt-1 flex items-center justify-center gap-1">
-          <span>⌨️</span>
-          <span>Bisa diketik langsung via keyboard PC/Laptop</span>
-        </div>
-      </div>
 
-      {/* PIN Masked Dots */}
-      <div className="flex items-center gap-3 mb-4">
-        {[0, 1, 2, 3, 4, 5].map((idx) => {
-          const isFilled = idx < pin.length;
-          return (
-            <div
-              key={idx}
-              className={`w-3.5 h-3.5 rounded-full transition-all duration-200 border-2 ${
-                isFilled
-                  ? 'bg-[#ED0278] border-[#ED0278] scale-110 shadow-sm shadow-pink-500/30'
-                  : 'bg-slate-100 border-slate-200'
-              }`}
-            />
-          );
-        })}
+        {/* 6 Modern PIN Cells */}
+        <div className="flex items-center gap-2.5">
+          {[0, 1, 2, 3, 4, 5].map((idx) => {
+            const isFilled = idx < pin.length;
+            const isCurrent = isFocused && idx === pin.length;
+
+            return (
+              <div
+                key={idx}
+                className={`w-10 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 border-2 ${
+                  isFilled
+                    ? 'bg-[#ED0278]/5 border-[#ED0278] shadow-sm shadow-pink-500/10'
+                    : isCurrent
+                    ? 'bg-white border-[#ED0278] ring-4 ring-[#ED0278]/15 scale-105'
+                    : 'bg-slate-50 border-slate-200/90 group-hover:border-slate-300'
+                }`}
+              >
+                {isFilled ? (
+                  <span className="w-3 h-3 rounded-full bg-[#ED0278] transition-all scale-100" />
+                ) : isCurrent ? (
+                  <span className="w-1.5 h-3.5 bg-[#ED0278] rounded-full animate-pulse" />
+                ) : (
+                  <span className="w-2 h-2 rounded-full bg-slate-300/60" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Subtle Minimalist Helper */}
+        <div className="flex items-center gap-1.5 mt-2.5 text-[11px] font-semibold text-slate-400">
+          <span>⌨️</span>
+          <span>Ketik langsung via keyboard PC atau keypad di bawah</span>
+        </div>
       </div>
 
       {/* Error Banner */}
       {errorMsg && (
-        <div className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3.5 py-1.5 rounded-xl mb-4 text-center w-full max-w-[260px]">
+        <div className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3.5 py-1.5 rounded-xl mb-3.5 text-center w-full max-w-[260px]">
           {errorMsg}
         </div>
       )}
