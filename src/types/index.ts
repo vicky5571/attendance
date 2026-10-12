@@ -167,7 +167,12 @@ export interface AdminLoginPayload {
   password: string;
 }
 
-export type LoginPayload = InternLoginPayload | AdminLoginPayload;
+export interface UnifiedLoginPayload {
+  email: string;
+  password: string;
+}
+
+export type LoginPayload = UnifiedLoginPayload | InternLoginPayload | AdminLoginPayload;
 
 export interface AuthResponseUser {
   id: string;
