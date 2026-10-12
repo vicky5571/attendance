@@ -12,10 +12,13 @@ import { PinModal } from '@/components/PinModal';
 import { RequestModal } from '@/components/RequestModal';
 import { HistoryModal } from '@/components/HistoryModal';
 import { MentorApprovalModal } from '@/components/MentorApprovalModal';
+import { ChangeOfficeModal } from '@/components/ChangeOfficeModal';
 import { calculateDistance, isWithinRadius } from '@/lib/client-geo';
 import {
   saveAttendanceCache,
   getAttendanceCache,
+  saveSelectedOffice,
+  getSelectedOffice,
 } from '@/lib/client-storage';
 import type { OfficeConfig, InternProfile, OfficeLocation } from '@/types';
 
@@ -46,6 +49,7 @@ export default function AttendancePage() {
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+  const [isOfficeModalOpen, setIsOfficeModalOpen] = useState(false);
 
   // Route Authentication Guard
   useEffect(() => {
@@ -103,8 +107,13 @@ export default function AttendancePage() {
       const locList: OfficeLocation[] = Array.isArray(locs) ? locs : locs?.locations || [];
       if (locList.length > 0) {
         setLocations(locList);
-        setSelectedLocationId(locList[0].id);
-        setCoords({ lat: locList[0].latitude, lng: locList[0].longitude });
+        const activeInt = Array.isArray(ints) ? ints.find((i: InternProfile) => i.id === currentInternId) : null;
+        const savedLocId = getSelectedOffice(currentInternId);
+        const targetLocId = savedLocId || activeInt?.assignedLocationId || locList[0].id;
+        const targetLoc = locList.find((l) => l.id === targetLocId) || locList[0];
+
+        setSelectedLocationId(targetLoc.id);
+        setCoords({ lat: targetLoc.latitude, lng: targetLoc.longitude });
         setDistance(0);
       } else if (cfg) {
         setCoords({ lat: cfg.targetLatitude, lng: cfg.targetLongitude });
@@ -176,6 +185,18 @@ export default function AttendancePage() {
 
   const handleLocationChange = (newLocationId: string) => {
     setSelectedLocationId(newLocationId);
+    saveSelectedOffice(currentInternId, newLocationId);
+
+    // Persist to server backend
+    fetch('/api/interns', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        internId: currentInternId,
+        locationId: newLocationId,
+      }),
+    }).catch(() => {});
+
     const loc = locations.find((l) => l.id === newLocationId);
     if (loc) {
       if (isSimulated) {
@@ -185,6 +206,7 @@ export default function AttendancePage() {
         const d = calculateDistance(coords.lat, coords.lng, loc.latitude, loc.longitude);
         setDistance(d);
       }
+      notify(`Kantor berhasil diubah ke: ${loc.name}`, 'success');
     }
   };
 
@@ -379,11 +401,13 @@ export default function AttendancePage() {
           )}
         </div>
 
-        {/* Locked Profile Card (Impersonation Prevented) */}
+        {/* Locked Profile Card with Active Office & Change CTA */}
         <ProfileCard
           interns={interns}
           selectedId={currentInternId}
           locked={true}
+          activeLocation={activeLocation}
+          onChangeOffice={() => setIsOfficeModalOpen(true)}
         />
 
         {/* Radar Geofence Card with Multi-Hub Locations */}
@@ -468,6 +492,14 @@ export default function AttendancePage() {
           }}
         />
       )}
+      {/* Change Office Location Modal */}
+      <ChangeOfficeModal
+        isOpen={isOfficeModalOpen}
+        onClose={() => setIsOfficeModalOpen(false)}
+        locations={locations}
+        selectedLocationId={selectedLocationId}
+        onSelectLocation={handleLocationChange}
+      />
     </div>
   );
 }

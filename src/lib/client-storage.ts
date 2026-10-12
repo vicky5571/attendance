@@ -97,6 +97,20 @@ export function getSelectedInternId(fallbackId: string): string {
 }
 
 /**
+ * Persists the user's chosen office location preference across browser refreshes.
+ */
+export function saveSelectedOffice(internId: string, locationId: string): void {
+  setItem(`${STORAGE_PREFIX}selected_office_${internId}`, locationId);
+}
+
+/**
+ * Gets the previously selected office location for an intern or null.
+ */
+export function getSelectedOffice(internId: string): string | null {
+  return getItem(`${STORAGE_PREFIX}selected_office_${internId}`);
+}
+
+/**
  * Clears memory cache for clean testing isolation.
  */
 export function clearAllMemoryCache(): void {

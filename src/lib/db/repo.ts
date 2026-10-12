@@ -32,6 +32,7 @@ interface InternRow {
   pin_hash?: string | null;
   email?: string | null;
   password_hash?: string | null;
+  assigned_location_id?: string | null;
 }
 
 interface AttendanceRow {
@@ -84,6 +85,7 @@ function mapInternRow(row: InternRow): InternProfile {
   if (row.pin_hash) profile.pinHash = row.pin_hash;
   if (row.email) profile.email = row.email;
   if (row.password_hash) profile.passwordHash = row.password_hash;
+  if (row.assigned_location_id) profile.assignedLocationId = row.assigned_location_id;
   return profile;
 }
 
@@ -158,8 +160,8 @@ export function createIntern(db: DatabaseSync, intern: InternProfile): void {
     INSERT INTO interns (
       id, nama_lengkap, divisi, nama_mentor, email_mentor,
       universitas, jurusan, periode_magang_selesai, status, pin_hash,
-      email, password_hash
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      email, password_hash, assigned_location_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   stmt.run(
     intern.id,
@@ -173,8 +175,20 @@ export function createIntern(db: DatabaseSync, intern: InternProfile): void {
     intern.status,
     intern.pinHash || null,
     intern.email ? intern.email.toLowerCase().trim() : null,
-    intern.passwordHash || null
+    intern.passwordHash || null,
+    intern.assignedLocationId || null
   );
+}
+
+export function updateInternLocation(
+  db: DatabaseSync,
+  internId: string,
+  locationId: string
+): void {
+  const stmt = db.prepare(`
+    UPDATE interns SET assigned_location_id = ? WHERE id = ?
+  `);
+  stmt.run(locationId, internId);
 }
 
 export function getIntern(db: DatabaseSync, id: string): InternProfile | null {

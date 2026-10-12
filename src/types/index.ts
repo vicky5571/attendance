@@ -21,6 +21,7 @@ export interface InternProfile {
   pinHash?: string;
   email?: string;
   passwordHash?: string;
+  assignedLocationId?: string;
 }
 
 export type AttendanceStatus = 'ON_TIME' | 'LATE' | 'EARLY_DEPARTURE' | 'ABSENT';

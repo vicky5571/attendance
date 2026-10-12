@@ -1,5 +1,5 @@
 import { getDatabase } from '../../../lib/db/client.ts';
-import { getIntern, createIntern, listInterns } from '../../../lib/db/repo.ts';
+import { getIntern, createIntern, listInterns, updateInternLocation } from '../../../lib/db/repo.ts';
 import type { InternProfile } from '../../../types/index.ts';
 
 export async function GET(request: Request) {
@@ -45,5 +45,37 @@ export async function POST(request: Request) {
     return Response.json(body, { status: 201 });
   } catch {
     return Response.json({ error: 'Malformed JSON payload' }, { status: 400 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    const { internId, locationId } = body;
+
+    if (!internId || !locationId) {
+      return Response.json(
+        { error: 'internId dan locationId wajib disertakan' },
+        { status: 400 }
+      );
+    }
+
+    const db = getDatabase();
+    const intern = getIntern(db, internId);
+    if (!intern) {
+      return Response.json({ error: `Intern not found with ID: ${internId}` }, { status: 404 });
+    }
+
+    updateInternLocation(db, internId, locationId);
+    return Response.json({
+      message: 'Lokasi kantor berhasil diperbarui',
+      internId,
+      locationId,
+    });
+  } catch (err) {
+    return Response.json(
+      { error: err instanceof Error ? err.message : 'Internal Server Error' },
+      { status: 500 }
+    );
   }
 }
