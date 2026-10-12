@@ -1,5 +1,6 @@
 import { getDatabase } from '../../../lib/db/client.ts';
 import { getOfficeConfig, setOfficeConfig } from '../../../lib/db/repo.ts';
+import { checkRoleIfAuthenticated } from '../../../lib/auth-guard.ts';
 import type { OfficeConfig } from '../../../types/index.ts';
 
 export async function GET() {
@@ -30,6 +31,13 @@ export async function PUT(request: Request) {
     }
 
     const db = getDatabase();
+
+    // Enforce administrative role if authenticated
+    const roleCheck = checkRoleIfAuthenticated(request, db, ['ADMIN', 'SUPERVISOR']);
+    if (!roleCheck.allowed && roleCheck.errorResponse) {
+      return roleCheck.errorResponse;
+    }
+
     setOfficeConfig(db, body);
     const updated = getOfficeConfig(db);
 

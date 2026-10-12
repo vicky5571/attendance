@@ -1,5 +1,6 @@
 import { getDatabase } from '../../../../../lib/db/client.ts';
 import { updateAttendanceRequestStatus, getAttendanceRequestById } from '../../../../../lib/db/requests-repo.ts';
+import { checkRoleIfAuthenticated } from '../../../../../lib/auth-guard.ts';
 import type { RequestStatus } from '../../../../../types/index.ts';
 
 const VALID_STATUSES: RequestStatus[] = ['APPROVED', 'REJECTED', 'PENDING'];
@@ -21,6 +22,12 @@ export async function PATCH(
     }
 
     const db = getDatabase();
+
+    // Enforce administrative role if authenticated
+    const roleCheck = checkRoleIfAuthenticated(req, db, ['ADMIN', 'SUPERVISOR']);
+    if (!roleCheck.allowed && roleCheck.errorResponse) {
+      return roleCheck.errorResponse;
+    }
     const existing = getAttendanceRequestById(db, id);
     if (!existing) {
       return Response.json(

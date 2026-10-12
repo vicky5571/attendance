@@ -132,3 +132,51 @@ export interface DailyRecapSummary {
   items: RecapInternItem[];
 }
 
+export type UserRole = 'INTERN' | 'ADMIN' | 'SUPERVISOR';
+
+export interface AppUser {
+  id: string;
+  username?: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  passwordHash?: string;
+  createdAt: string;
+}
+
+export interface SessionRecord {
+  id: string;
+  userId: string;
+  role: UserRole;
+  token: string;
+  expiresAt: string; // ISO DateTime
+  createdAt: string; // ISO DateTime
+}
+
+export interface InternLoginPayload {
+  role: 'INTERN';
+  internId: string;
+  pin: string;
+}
+
+export interface AdminLoginPayload {
+  role: 'ADMIN' | 'SUPERVISOR';
+  email: string;
+  password: string;
+}
+
+export type LoginPayload = InternLoginPayload | AdminLoginPayload;
+
+export interface AuthResponseUser {
+  id: string;
+  name: string;
+  email?: string;
+  role: UserRole;
+  divisi?: string;
+}
+
+export interface AuthResponse {
+  user: AuthResponseUser;
+  message?: string;
+}
+

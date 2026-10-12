@@ -2,6 +2,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { getDatabase } from './client.ts';
 import { initSchema } from './schema.ts';
 import { setOfficeConfig, createIntern, getIntern } from './repo.ts';
+import { hashPassword } from '../auth.ts';
 import type { OfficeConfig, InternProfile, OfficeLocation } from '../../types/index.ts';
 
 export const DEFAULT_OFFICE_CONFIG: OfficeConfig = {
@@ -94,6 +95,23 @@ export function seedDatabase(db: DatabaseSync): void {
     } else if (!existing.pinHash && intern.pinHash) {
       db.prepare('UPDATE interns SET pin_hash = ? WHERE id = ?').run(intern.pinHash, intern.id);
     }
+  }
+
+  // Seed Default Admin User
+  const existingAdmin = db.prepare('SELECT id FROM users WHERE email = ?').get('admin@ioh.co.id');
+  if (!existingAdmin) {
+    db.prepare(`
+      INSERT INTO users (id, username, email, password_hash, role, name, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      'user-admin-default',
+      'admin',
+      'admin@ioh.co.id',
+      hashPassword('AdminIOH2026!'),
+      'ADMIN',
+      'Administrator IOH',
+      new Date().toISOString()
+    );
   }
 }
 

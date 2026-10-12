@@ -7,6 +7,7 @@ import {
 } from '../../../../lib/db/repo.ts';
 import { evaluateAttendanceRemarks } from '../../../../lib/geo.ts';
 import { verifyPin } from '../../../../lib/auth.ts';
+import { enforceInternIdentity } from '../../../../lib/auth-guard.ts';
 
 interface CheckOutPayload {
   internId: string;
@@ -29,7 +30,13 @@ export async function POST(request: Request) {
 
     const db = getDatabase();
 
-    // 0. Anti-Proxy PIN Verification Guard
+    // 0. Zero-impersonation guard
+    const identityCheck = enforceInternIdentity(request, db, body.internId);
+    if (!identityCheck.allowed && identityCheck.errorResponse) {
+      return identityCheck.errorResponse;
+    }
+
+    // 0b. Anti-Proxy PIN Verification Guard
     const intern = getIntern(db, body.internId);
     if (intern && intern.pinHash) {
       if (!body.pin || !verifyPin(body.pin, intern.pinHash)) {

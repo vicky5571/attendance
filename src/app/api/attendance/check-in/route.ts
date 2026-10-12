@@ -11,6 +11,7 @@ import {
   findMatchingLocation,
 } from '../../../../lib/geo.ts';
 import { verifyPin } from '../../../../lib/auth.ts';
+import { enforceInternIdentity } from '../../../../lib/auth-guard.ts';
 import { listOfficeLocations } from '../../../../lib/db/locations-repo.ts';
 import type { AttendanceRecord } from '../../../../types/index.ts';
 
@@ -40,6 +41,12 @@ export async function POST(request: Request) {
     }
 
     const db = getDatabase();
+
+    // 0. Zero-impersonation guard (intern can only punch for themselves)
+    const identityCheck = enforceInternIdentity(request, db, body.internId);
+    if (!identityCheck.allowed && identityCheck.errorResponse) {
+      return identityCheck.errorResponse;
+    }
 
     // 1. Verify intern exists
     const intern = getIntern(db, body.internId);
