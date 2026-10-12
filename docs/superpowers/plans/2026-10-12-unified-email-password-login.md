@@ -70,7 +70,7 @@ Test Files:
 - `InternProfile`: add `email?: string; passwordHash?: string;`
 - `getInternByEmail(db: DatabaseSync, email: string): InternProfile | null`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 // tests/auth-schema.test.ts (add test block)
@@ -88,12 +88,12 @@ it('should support email and password_hash columns on interns table', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npm run test:fast tests/auth-schema.test.ts`  
 Expected: FAIL (column email / password_hash does not exist).
 
-- [ ] **Step 3: Implement minimal passing code**
+- [x] **Step 3: Implement minimal passing code**
 
 1. In `src/types/index.ts`, add `email?: string; passwordHash?: string;` to `InternProfile`.
 2. In `src/lib/db/schema.ts`:
@@ -103,12 +103,12 @@ Expected: FAIL (column email / password_hash does not exist).
    - Map `email: row.email || undefined` and `passwordHash: row.password_hash || undefined` in `mapIntern`.
    - Add `getInternByEmail(db, email)` helper.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npm run test:fast tests/auth-schema.test.ts`  
 Expected: PASS with 0 failures.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/types/index.ts src/lib/db/schema.ts src/lib/db/repo.ts tests/auth-schema.test.ts
@@ -128,7 +128,7 @@ git commit -m "feat(auth): add email and password hash columns to interns table"
   - `sarah@ioh.co.id` / `InternIOH2026!`
   - `zacky@ioh.co.id` / `InternIOH2026!`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 // tests/seed.test.ts
@@ -145,12 +145,12 @@ it('should seed default interns with valid corporate email and password hashes',
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npm run test:fast tests/seed.test.ts`  
 Expected: FAIL (`sarah.email` is undefined).
 
-- [ ] **Step 3: Implement minimal passing code**
+- [x] **Step 3: Implement minimal passing code**
 
 In `src/lib/db/seed.ts`:
 - Update `INITIAL_INTERNS` items with:
@@ -158,12 +158,12 @@ In `src/lib/db/seed.ts`:
   - `intern-sarah`: `email: 'sarah@ioh.co.id'`, `passwordHash: hashPassword('InternIOH2026!')`
 - Update `createIntern` statements to persist `email` and `password_hash`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npm run test:fast tests/seed.test.ts`  
 Expected: PASS with 0 failures.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/db/seed.ts tests/seed.test.ts
@@ -183,7 +183,7 @@ git commit -m "feat(auth): seed default corporate email and password for interns
 - Request body: `{ email: string, password: string }` (or legacy `{ role, internId, pin }`)
 - Response: `200 OK` `{ user: { id, name, email, role, divisi }, message: 'Login berhasil' }` + `ioh_session` cookie
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 // tests/api-auth.test.ts (add test cases)
@@ -203,12 +203,12 @@ it('should authenticate intern with valid email and password via unified login',
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npm run test:fast tests/api-auth.test.ts`  
 Expected: FAIL (`Field "role" wajib diisi`).
 
-- [ ] **Step 3: Implement minimal passing code**
+- [x] **Step 3: Implement minimal passing code**
 
 In `src/app/api/auth/login/route.ts`:
 1. If payload contains `email` and `password`:
@@ -217,12 +217,12 @@ In `src/app/api/auth/login/route.ts`:
    - If neither matches: return `401 Unauthorized` with `{ error: 'Email atau password yang dimasukkan salah' }`.
 2. Keep legacy support for `body.role === 'INTERN'` with `internId` + `pin` for backward compatibility.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npm run test:fast tests/api-auth.test.ts`  
 Expected: PASS with 0 failures across all login modes.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/api/auth/login/route.ts src/types/index.ts tests/api-auth.test.ts
@@ -245,11 +245,11 @@ git commit -m "feat(auth): support unified email and password authentication"
 **Interfaces:**
 - `login(email: string, password: string): Promise<{ success: boolean; error?: string }>` in `useAuth()`
 
-- [ ] **Step 1: Write the failing type check**
+- [x] **Step 1: Write the failing type check**
 
 In `src/context/AuthContext.tsx`, reference `login` function.
 
-- [ ] **Step 2: Implement minimal passing code**
+- [x] **Step 2: Implement minimal passing code**
 
 1. In `src/lib/client-auth.ts`, add:
    ```typescript
@@ -268,12 +268,12 @@ In `src/context/AuthContext.tsx`, reference `login` function.
    - Add `login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>` to `AuthContextType`.
    - Implement `login` calling `loginWithCredentials`.
 
-- [ ] **Step 3: Run verification command**
+- [x] **Step 3: Run verification command**
 
 Run: `npx tsc --noEmit`  
 Expected: PASS with 0 errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/lib/client-auth.ts src/context/AuthContext.tsx
@@ -289,7 +289,7 @@ git commit -m "feat(auth): expose unified login method in AuthContext"
 - Create/Modify: `src/components/auth/UnifiedLoginForm.tsx`
 - Modify: `docs/frontend-login-handover.md`
 
-- [ ] **Step 1: Build UnifiedLoginForm Component**
+- [x] **Step 1: Build UnifiedLoginForm Component**
 
 Create `src/components/auth/UnifiedLoginForm.tsx`:
 - Mobile-first responsive card design (375px–430px).
@@ -299,18 +299,18 @@ Create `src/components/auth/UnifiedLoginForm.tsx`:
 - Error banner for invalid credentials.
 - Hint text showing pre-seeded dev credentials (`sarah@ioh.co.id` / `admin@ioh.co.id`).
 
-- [ ] **Step 2: Update `/login/page.tsx`**
+- [x] **Step 2: Update `/login/page.tsx`**
 
 - Remove the intern vs admin tab switcher and remove the intern dropdown.
 - Render `<UnifiedLoginForm />`.
 - Maintain automatic redirect: Interns to `/`, Admins/Mentors to `/admin`.
 
-- [ ] **Step 3: Run verification command**
+- [x] **Step 3: Run verification command**
 
 Run: `npx tsc --noEmit && npm test`  
 Expected: PASS with 0 errors and all tests passing.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/app/login/page.tsx src/components/auth/UnifiedLoginForm.tsx docs/frontend-login-handover.md
