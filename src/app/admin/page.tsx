@@ -11,6 +11,11 @@ import type { AttendanceRequest, InternProfile, OfficeLocation } from '@/types';
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // State
   const [interns, setInterns] = useState<InternProfile[]>([]);
@@ -52,14 +57,14 @@ export default function AdminDashboardPage() {
 
   // Route Authentication Guard
   useEffect(() => {
-    if (!isLoading) {
+    if (mounted && !isLoading) {
       if (!isAuthenticated || !user) {
         router.push('/login');
       } else if (user.role === 'INTERN') {
         router.push('/');
       }
     }
-  }, [isLoading, isAuthenticated, user, router]);
+  }, [mounted, isLoading, isAuthenticated, user, router]);
 
   // Data fetching
   const fetchInterns = async () => {
@@ -198,7 +203,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  if (isLoading) {
+  if (!mounted || isLoading) {
     return (
       <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
         <div className="flex flex-col items-center gap-2">

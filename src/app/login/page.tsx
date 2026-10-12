@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { UnifiedLoginForm } from '@/components/auth/UnifiedLoginForm';
@@ -8,18 +8,23 @@ import { UnifiedLoginForm } from '@/components/auth/UnifiedLoginForm';
 export default function LoginPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated && user) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !isLoading && isAuthenticated && user) {
       if (user.role === 'INTERN') {
         router.push('/');
       } else {
         router.push('/admin');
       }
     }
-  }, [isAuthenticated, isLoading, user, router]);
+  }, [mounted, isAuthenticated, isLoading, user, router]);
 
-  if (isLoading) {
+  if (!mounted || isLoading) {
     return (
       <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">

@@ -22,6 +22,11 @@ import type { OfficeConfig, InternProfile, OfficeLocation } from '@/types';
 export default function AttendancePage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [config, setConfig] = useState<OfficeConfig | null>(null);
   const [interns, setInterns] = useState<InternProfile[]>([]);
@@ -44,10 +49,10 @@ export default function AttendancePage() {
 
   // Route Authentication Guard
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (mounted && !isLoading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [mounted, isLoading, isAuthenticated, router]);
 
   // Fetch pending approvals count (if admin / mentor)
   const fetchPendingCount = () => {
@@ -272,7 +277,7 @@ export default function AttendancePage() {
     }
   };
 
-  if (isLoading) {
+  if (!mounted || isLoading) {
     return (
       <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
         <div className="flex flex-col items-center gap-2">
