@@ -38,7 +38,12 @@ export function HistoryModal({
       );
       if (res.ok) {
         const data = await res.json();
-        setSummary(data);
+        const summaryData = data?.summary || data;
+        // ensure records array is attached if it's on top-level data
+        if (Array.isArray(data?.records) && !summaryData.records) {
+          summaryData.records = data.records;
+        }
+        setSummary(summaryData);
       }
     } catch {
       // ignore
@@ -131,10 +136,10 @@ export function HistoryModal({
                     Total Jam
                   </span>
                   <span className="text-lg font-black text-slate-800 font-mono mt-0.5">
-                    {summary.totalWorkHours}h
+                    {summary.totalWorkHours ?? 0}h
                   </span>
                   <span className="text-[10px] text-slate-500 mt-0.5">
-                    {summary.presentDays} hari hadir
+                    {(summary.presentDays ?? 0)} hari hadir
                   </span>
                 </div>
 
@@ -143,10 +148,10 @@ export function HistoryModal({
                     Tepat Waktu
                   </span>
                   <span className="text-lg font-black text-emerald-700 font-mono mt-0.5">
-                    {summary.punctualityRate}%
+                    {(summary.punctualityRate ?? 0)}%
                   </span>
                   <span className="text-[10px] text-emerald-600 mt-0.5">
-                    {summary.onTimeDays} on-time
+                    {(summary.onTimeDays ?? 0)} on-time
                   </span>
                 </div>
 
@@ -155,10 +160,10 @@ export function HistoryModal({
                     Remote / Cuti
                   </span>
                   <span className="text-lg font-black text-[#ED0278] font-mono mt-0.5">
-                    {summary.wfhDays + summary.sickDays + summary.permitDays}
+                    {(summary.wfhDays ?? 0) + (summary.sickDays ?? 0) + (summary.permitDays ?? 0)}
                   </span>
                   <span className="text-[10px] text-pink-600 mt-0.5">
-                    WFH: {summary.wfhDays} | Sakit: {summary.sickDays}
+                    WFH: {summary.wfhDays ?? 0} | Sakit: {summary.sickDays ?? 0}
                   </span>
                 </div>
               </div>
@@ -166,15 +171,15 @@ export function HistoryModal({
               {/* Records Timeline Table */}
               <div>
                 <h4 className="text-xs font-extrabold text-slate-800 mb-2">
-                  Logbook Harian Bulan Ini ({summary.records.length} hari)
+                  Logbook Harian Bulan Ini ({(summary.records?.length ?? 0)} hari)
                 </h4>
-                {summary.records.length === 0 ? (
+                {(!summary.records || summary.records.length === 0) ? (
                   <div className="text-center py-6 text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                     Belum ada presensi yang terekam pada bulan ini.
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
-                    {summary.records.map((rec) => (
+                    {(summary.records || []).map((rec) => (
                       <div
                         key={rec.id}
                         className="p-3 rounded-2xl border border-slate-100 bg-white shadow-xs flex items-center justify-between text-xs"
