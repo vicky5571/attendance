@@ -33,7 +33,8 @@ export function MentorApprovalModal({
       const res = await fetch('/api/attendance/requests');
       if (res.ok) {
         const data = await res.json();
-        setRequests(data);
+        const list = Array.isArray(data?.requests) ? data.requests : Array.isArray(data) ? data : [];
+        setRequests(list);
       }
     } catch {
       // ignore
@@ -64,7 +65,8 @@ export function MentorApprovalModal({
 
   if (!isOpen) return null;
 
-  const filteredRequests = requests.filter((r) => {
+  const safeRequests = Array.isArray(requests) ? requests : [];
+  const filteredRequests = safeRequests.filter((r) => {
     if (filter === 'ALL') return true;
     return r.status === filter;
   });
@@ -129,7 +131,7 @@ export function MentorApprovalModal({
               Tidak ada permohonan dengan status ini.
             </div>
           ) : (
-            filteredRequests.map((req) => (
+            (Array.isArray(filteredRequests) ? filteredRequests : []).map((req) => (
               <div
                 key={req.id}
                 className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 flex flex-col gap-2 shadow-xs"

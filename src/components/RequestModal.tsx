@@ -51,7 +51,8 @@ export function RequestModal({
       const res = await fetch(`/api/attendance/requests?internId=${encodeURIComponent(internId)}`);
       if (res.ok) {
         const data = await res.json();
-        setRequests(data);
+        const list = Array.isArray(data?.requests) ? data.requests : Array.isArray(data) ? data : [];
+        setRequests(list);
       }
     } catch {
       // ignore
@@ -239,12 +240,12 @@ export function RequestModal({
                 <div className="text-center py-8 text-xs text-slate-400">
                   Memuat riwayat...
                 </div>
-              ) : requests.length === 0 ? (
+              ) : (!Array.isArray(requests) || requests.length === 0) ? (
                 <div className="text-center py-8 text-xs text-slate-400">
                   Belum ada permohonan yang diajukan.
                 </div>
               ) : (
-                requests.map((req) => (
+                (Array.isArray(requests) ? requests : []).map((req) => (
                   <div
                     key={req.id}
                     className="p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 flex flex-col gap-1.5"
