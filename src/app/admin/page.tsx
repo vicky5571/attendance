@@ -7,24 +7,16 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { WhatsAppModal } from '@/components/WhatsAppModal';
 import { HistoryModal } from '@/components/HistoryModal';
-import { AddLocationModal } from '@/components/admin/AddLocationModal';
 import type { AttendanceRequest, InternProfile, OfficeLocation } from '@/types';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // State
   const [interns, setInterns] = useState<InternProfile[]>([]);
   const [requests, setRequests] = useState<AttendanceRequest[]>([]);
   const [locations, setLocations] = useState<OfficeLocation[]>([]);
-  const [isAddLocationOpen, setIsAddLocationOpen] = useState(false);
-  const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
   const [reqFilter, setReqFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
@@ -59,14 +51,14 @@ export default function AdminDashboardPage() {
 
   // Route Authentication Guard
   useEffect(() => {
-    if (mounted && !isLoading) {
+    if (!isLoading) {
       if (!isAuthenticated || !user) {
         router.push('/login');
       } else if (user.role === 'INTERN') {
         router.push('/');
       }
     }
-  }, [mounted, isLoading, isAuthenticated, user, router]);
+  }, [isLoading, isAuthenticated, user, router]);
 
   // Data fetching
   const fetchInterns = async () => {
@@ -96,27 +88,6 @@ export default function AdminDashboardPage() {
         setLocations(list);
       }
     } catch {}
-  };
-
-  const handleDeleteLocation = async (id: string, locName: string) => {
-    if (!confirm(`Hapus lokasi kantor "${locName}" dari sistem?`)) return;
-    setDeleteLoadingId(id);
-    try {
-      const res = await fetch(`/api/config/locations?id=${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        notify(`Lokasi "${locName}" berhasil dihapus`, 'success');
-        fetchLocations();
-      } else {
-        const data = await res.json();
-        notify(data.error || 'Gagal menghapus lokasi', 'error');
-      }
-    } catch {
-      notify('Terjadi kesalahan jaringan saat menghapus lokasi', 'error');
-    } finally {
-      setDeleteLoadingId(null);
-    }
   };
 
   const fetchRecap = async (date: string) => {
@@ -206,7 +177,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  if (!mounted || isLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
         <div className="flex flex-col items-center gap-2">
@@ -274,9 +245,7 @@ export default function AdminDashboardPage() {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 hover:border-[#ED0278] hover:text-[#ED0278] transition shadow-2xs"
             >
               <span>Presensi Magang</span>
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
+              <span>➔</span>
             </a>
 
             {/* WA Modal button */}
@@ -337,7 +306,7 @@ export default function AdminDashboardPage() {
               Kantor & Hub
             </span>
             <div className="flex items-baseline justify-between mt-1">
-              <span className="text-2xl font-black text-slate-900">{locations.length}</span>
+              <span className="text-2xl font-black text-slate-900">{locations.length || 3}</span>
               <span className="text-xs font-bold text-slate-500">Geofence</span>
             </div>
           </div>
@@ -374,11 +343,7 @@ export default function AdminDashboardPage() {
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-pink-50 text-[#ED0278] flex items-center justify-center shrink-0">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
+                <span className="text-lg">👥</span>
                 <h2 className="text-sm font-extrabold text-slate-900">
                   Daftar Peserta Magang & Timesheet Logbook
                 </h2>
@@ -416,23 +381,17 @@ export default function AdminDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setInspectIntern(intern)}
-                    className="flex-1 py-1.5 px-2 rounded-xl bg-white border border-slate-200 hover:border-[#ED0278] text-slate-700 font-extrabold text-[11px] transition shadow-2xs text-center cursor-pointer flex items-center justify-center gap-1.5"
+                    className="flex-1 py-1.5 px-2 rounded-xl bg-white border border-slate-200 hover:border-[#ED0278] text-slate-700 font-extrabold text-[11px] transition shadow-2xs text-center cursor-pointer"
                   >
-                    <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    <span>Detail Logbook</span>
+                    📊 Detail Logbook
                   </button>
 
                   <a
                     href={`/api/reports/monthly-export?internId=${encodeURIComponent(intern.id)}&month=${currentMonthStr}`}
                     download
-                    className="flex-1 py-1.5 px-2 rounded-xl bg-[#ED0278] hover:bg-[#d6026c] text-white font-extrabold text-[11px] transition shadow-2xs text-center cursor-pointer flex items-center justify-center gap-1.5"
+                    className="flex-1 py-1.5 px-2 rounded-xl bg-[#ED0278] hover:bg-[#d6026c] text-white font-extrabold text-[11px] transition shadow-2xs text-center cursor-pointer"
                   >
-                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    <span>Unduh CSV</span>
+                    📥 Unduh CSV
                   </a>
                 </div>
               </div>
@@ -446,11 +405,7 @@ export default function AdminDashboardPage() {
           <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-7 h-7 rounded-lg bg-pink-50 text-[#ED0278] flex items-center justify-center shrink-0">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                  </svg>
-                </div>
+                <span className="text-lg">📢</span>
                 <h3 className="text-sm font-extrabold text-slate-900">
                   Broadcast Laporan Harian
                 </h3>
@@ -494,34 +449,16 @@ export default function AdminDashboardPage() {
 
           {/* Office Hub Geofencing Overview */}
           <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between gap-3">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-7 h-7 rounded-lg bg-pink-50 text-[#ED0278] flex items-center justify-center shrink-0">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-sm font-extrabold text-slate-900">
-                    Multi-Hub Kantor &amp; Geofence
-                  </h3>
-                </div>
-                <p className="text-xs text-slate-400">
-                  Titik presensi terdaftar dalam sistem IOH Multi-Hub
-                </p>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">📍</span>
+                <h3 className="text-sm font-extrabold text-slate-900">
+                  Multi-Hub Kantor & Geofence
+                </h3>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setIsAddLocationOpen(true)}
-                className="py-1.5 px-3 rounded-xl bg-[#ED0278] hover:bg-[#d0026b] active:scale-95 text-white font-extrabold text-xs transition shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                </svg>
-                <span>Tambah Kantor</span>
-              </button>
+              <p className="text-xs text-slate-400">
+                Titik presensi terdaftar dalam sistem IOH Multi-Hub
+              </p>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -540,52 +477,11 @@ export default function AdminDashboardPage() {
                     Radius {loc.maxRadiusMeters}m
                   </span>
                 </div>
-              ) : (
-                locations.map((loc) => (
-                  <div
-                    key={loc.id}
-                    className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs hover:border-pink-200 transition"
-                  >
-                    <div className="min-w-0 flex-1 pr-2">
-                      <span className="font-bold text-slate-800 block truncate">{loc.name}</span>
-                      <span className="text-[10px] text-slate-400 block truncate">
-                        {loc.latitude.toFixed(4)}, {loc.longitude.toFixed(4)} {loc.address ? `• ${loc.address}` : ''}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] font-extrabold text-[#ED0278] bg-[#ED0278]/10 px-2 py-0.5 rounded-full">
-                        Radius {loc.maxRadiusMeters}m
-                      </span>
-                      <button
-                        type="button"
-                        disabled={deleteLoadingId === loc.id}
-                        onClick={() => handleDeleteLocation(loc.id, loc.name)}
-                        className="w-6 h-6 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition cursor-pointer disabled:opacity-50"
-                        title="Hapus lokasi kantor"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
+              ))}
             </div>
           </div>
         </div>
       </div>
-
-      {/* Add Location Modal */}
-      <AddLocationModal
-        isOpen={isAddLocationOpen}
-        onClose={() => setIsAddLocationOpen(false)}
-        onSuccess={() => {
-          notify('Kantor baru berhasil didaftarkan ke sistem multi-hub', 'success');
-          fetchLocations();
-        }}
-      />
 
       {/* WhatsApp Modal */}
       <WhatsAppModal
