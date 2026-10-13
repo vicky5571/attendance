@@ -1,5 +1,7 @@
 'use client';
 
+import { VerificationManager } from '@/components/admin/VerificationManager';
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -80,7 +82,11 @@ export default function AdminDashboardPage() {
   const fetchLocations = async () => {
     try {
       const res = await fetch('/api/config/locations');
-      if (res.ok) setLocations(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data?.locations) ? data.locations : Array.isArray(data) ? data : [];
+        setLocations(list);
+      }
     } catch {}
   };
 
@@ -212,15 +218,12 @@ export default function AdminDashboardPage() {
         {/* Top Header Card */}
         <header className="bg-white rounded-3xl p-5 shadow-xs border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="relative w-11 h-11 shrink-0">
-              <svg viewBox="0 0 100 100" className="w-full h-full">
-                <circle cx="38" cy="45" r="28" fill="#FFC72C" opacity="0.9" />
-                <circle cx="62" cy="42" r="26" fill="#ED1C24" opacity="0.85" />
-                <circle cx="50" cy="62" r="28" fill="#ED0278" opacity="0.9" />
-                <circle cx="68" cy="60" r="20" fill="#7C2582" opacity="0.75" />
-              </svg>
-            </div>
-            <div>
+            <img
+              src="/icons/logo.png"
+              alt="Indosat Ooredoo Hutchison"
+              className="h-9 sm:h-10 w-auto object-contain shrink-0"
+            />
+            <div className="border-l border-slate-200 pl-3">
               <div className="flex items-center gap-2">
                 <h1 className="text-base font-black text-slate-900 tracking-tight">
                   Dashboard Mentor & Supervisor
@@ -326,118 +329,14 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Section 1: Approval Center */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-xs flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🛡️</span>
-                <h2 className="text-sm font-extrabold text-slate-900">
-                  Pusat Persetujuan Izin, Sakit & WFH
-                </h2>
-                {pendingRequests.length > 0 && (
-                  <span className="bg-[#ED0278] text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                    {pendingRequests.length} Baru
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Verifikasi dan putuskan pengajuan absensi fleksibel peserta magang
-              </p>
-            </div>
-
-            {/* Filter Buttons */}
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold self-start sm:self-auto">
-              {(['PENDING', 'APPROVED', 'REJECTED', 'ALL'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setReqFilter(tab)}
-                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer text-[11px] ${
-                    reqFilter === tab
-                      ? 'bg-white text-slate-900 shadow-2xs'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  {tab === 'PENDING' ? 'Menunggu' : tab === 'APPROVED' ? 'Disetujui' : tab === 'REJECTED' ? 'Ditolak' : 'Semua'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {filteredRequests.length === 0 ? (
-            <div className="py-8 text-center text-xs font-bold text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-              Tidak ada permohonan dengan status &ldquo;{reqFilter}&rdquo;
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {filteredRequests.map((req) => (
-                <div
-                  key={req.id}
-                  className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/60 hover:bg-slate-50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                >
-                  <div className="flex flex-col gap-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-xs text-slate-900">
-                        {interns.find((i) => i.id === req.internId)?.namaLengkap || req.internId}
-                      </span>
-                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase ${
-                        req.type === 'WFH'
-                          ? 'bg-blue-100 text-blue-700'
-                          : req.type === 'SAKIT'
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-purple-100 text-purple-700'
-                      }`}>
-                        {req.type}
-                      </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        req.status === 'PENDING'
-                          ? 'bg-rose-100 text-rose-700 animate-pulse'
-                          : req.status === 'APPROVED'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-slate-200 text-slate-700'
-                      }`}>
-                        ● {req.status}
-                      </span>
-                    </div>
-
-                    <div className="text-xs text-slate-600">
-                      <strong>Tanggal:</strong> {req.date}
-                    </div>
-                    <div className="text-xs text-slate-500 italic">
-                      &ldquo;{req.reason}&rdquo;
-                    </div>
-                    {req.reviewedBy && (
-                      <div className="text-[10px] text-slate-400 mt-0.5">
-                        Ditinjau oleh: {req.reviewedBy}
-                      </div>
-                    )}
-                  </div>
-
-                  {req.status === 'PENDING' && (
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        disabled={actionLoadingId === req.id}
-                        onClick={() => handleReviewRequest(req.id, 'APPROVED')}
-                        className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs transition shadow-xs cursor-pointer disabled:opacity-50"
-                      >
-                        ✓ Setujui
-                      </button>
-                      <button
-                        type="button"
-                        disabled={actionLoadingId === req.id}
-                        onClick={() => handleReviewRequest(req.id, 'REJECTED')}
-                        className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-700 font-extrabold text-xs transition border border-rose-200 cursor-pointer disabled:opacity-50"
-                      >
-                        ✕ Tolak
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <VerificationManager
+          interns={interns}
+          adminName={user?.name || 'Administrator'}
+          onActionComplete={() => {
+            fetchRequests();
+            fetchInterns();
+          }}
+        />
 
         {/* Section 2: Interns List & Timesheet CSV */}
         <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-xs flex flex-col gap-4">
@@ -563,7 +462,7 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="flex flex-col gap-2">
-              {locations.map((loc) => (
+              {Array.isArray(locations) && locations.map((loc) => (
                 <div
                   key={loc.id}
                   className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs"

@@ -1,5 +1,7 @@
 'use client';
 
+import { getCurrentOfficeForIntern } from '@/lib/services/relocation-service';
+
 import React from 'react';
 import type { InternProfile } from '@/types';
 
@@ -78,6 +80,19 @@ export function ProfileCard({ interns, selectedId, onSelect, locked = false }: P
         <div className="text-[11px] text-slate-400">
           Periode s/d: <strong>{active?.periodeMagangSelesai}</strong>
         </div>
+      </div>
+
+      <div className="mt-3 pt-2.5 border-t border-slate-100/80 flex items-center justify-between text-xs">
+        <span className="text-[11px] font-semibold text-slate-500 truncate max-w-[200px]">
+          🏢 {active?.id ? getCurrentOfficeForIntern(active.id, 'KPPTI Jakarta Pusat (HQ)') : 'KPPTI Jakarta Pusat (HQ)'}
+        </span>
+        <a
+          href="/profile"
+          className="text-[11px] font-extrabold text-[#ED0278] hover:underline flex items-center gap-1 shrink-0"
+        >
+          <span>Profil & Pindah Kantor</span>
+          <span>➔</span>
+        </a>
       </div>
     </div>
   );

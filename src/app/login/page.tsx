@@ -45,8 +45,12 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#F8F9FA] text-slate-900 flex flex-col items-center justify-center p-4 sm:p-6 font-sans">
       <div className="w-full max-w-sm bg-white rounded-3xl p-6 sm:p-7 shadow-xl border border-slate-100 flex flex-col items-center">
         {/* IOH Brand Header */}
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#ED0278] to-[#FF4B98] flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-pink-500/25 mb-3">
-          IOH
+        <div className="flex items-center justify-center mb-3">
+          <img
+            src="/icons/logo.png"
+            alt="Indosat Ooredoo Hutchison"
+            className="h-10 sm:h-11 w-auto object-contain"
+          />
         </div>
         <h1 className="text-lg font-black text-slate-900 tracking-tight text-center">
           Sistem Presensi Magang

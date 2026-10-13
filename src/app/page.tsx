@@ -95,10 +95,11 @@ export default function AttendancePage() {
     ]).then(([cfg, ints, locs]) => {
       setConfig(cfg);
       setInterns(ints);
-      if (Array.isArray(locs) && locs.length > 0) {
-        setLocations(locs);
-        setSelectedLocationId(locs[0].id);
-        setCoords({ lat: locs[0].latitude, lng: locs[0].longitude });
+      const locList = Array.isArray(locs?.locations) ? locs.locations : Array.isArray(locs) ? locs : [];
+      if (locList.length > 0) {
+        setLocations(locList);
+        setSelectedLocationId(locList[0].id);
+        setCoords({ lat: locList[0].latitude, lng: locList[0].longitude });
         setDistance(0);
       } else if (cfg) {
         setCoords({ lat: cfg.targetLatitude, lng: cfg.targetLongitude });
@@ -325,11 +326,11 @@ export default function AttendancePage() {
         />
 
         {/* Enterprise Quick-Action Toolbar */}
-        <div className={`grid ${isSupervisorOrAdmin ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
+        <div className={`grid ${isSupervisorOrAdmin ? 'grid-cols-4' : 'grid-cols-3'} gap-2`}>
           <button
             type="button"
             onClick={() => setRequestModalOpen(true)}
-            className="flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
+            className="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
           >
             <span className="text-base mb-0.5">✍️</span>
             <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
@@ -340,13 +341,23 @@ export default function AttendancePage() {
           <button
             type="button"
             onClick={() => setHistoryModalOpen(true)}
-            className="flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
+            className="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
           >
             <span className="text-base mb-0.5">📊</span>
             <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
-              Timesheet & CSV
+              Catatan Presensi
             </span>
           </button>
+
+          <a
+            href="/profile"
+            className="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
+          >
+            <span className="text-base mb-0.5">👤</span>
+            <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
+              Profil Magang
+            </span>
+          </a>
 
           {isSupervisorOrAdmin && (
             <button
