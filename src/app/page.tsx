@@ -111,16 +111,11 @@ export default function AttendancePage() {
     ]).then(([cfg, ints, locs]) => {
       setConfig(cfg);
       setInterns(ints);
-      const locList: OfficeLocation[] = Array.isArray(locs) ? locs : locs?.locations || [];
+      const locList = Array.isArray(locs?.locations) ? locs.locations : Array.isArray(locs) ? locs : [];
       if (locList.length > 0) {
         setLocations(locList);
-        const activeInt = Array.isArray(ints) ? ints.find((i: InternProfile) => i.id === currentInternId) : null;
-        const savedLocId = getSelectedOffice(currentInternId);
-        const targetLocId = savedLocId || activeInt?.assignedLocationId || locList[0].id;
-        const targetLoc = locList.find((l) => l.id === targetLocId) || locList[0];
-
-        setSelectedLocationId(targetLoc.id);
-        setCoords({ lat: targetLoc.latitude, lng: targetLoc.longitude });
+        setSelectedLocationId(locList[0].id);
+        setCoords({ lat: locList[0].latitude, lng: locList[0].longitude });
         setDistance(0);
       } else if (cfg) {
         setCoords({ lat: cfg.targetLatitude, lng: cfg.targetLongitude });
@@ -412,11 +407,11 @@ export default function AttendancePage() {
         )}
 
         {/* Enterprise Quick-Action Toolbar */}
-        <div className={`grid ${isSupervisorOrAdmin ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
+        <div className={`grid ${isSupervisorOrAdmin ? 'grid-cols-4' : 'grid-cols-3'} gap-2`}>
           <button
             type="button"
             onClick={() => setRequestModalOpen(true)}
-            className="flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center group"
+            className="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
           >
             <svg className="w-4 h-4 mb-1 text-slate-600 group-hover:text-[#ED0278] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -429,15 +424,25 @@ export default function AttendancePage() {
           <button
             type="button"
             onClick={() => setHistoryModalOpen(true)}
-            className="flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center group"
+            className="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
           >
             <svg className="w-4 h-4 mb-1 text-slate-600 group-hover:text-[#ED0278] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
             <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
-              Timesheet &amp; CSV
+              Catatan Presensi
             </span>
           </button>
+
+          <a
+            href="/profile"
+            className="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
+          >
+            <span className="text-base mb-0.5">👤</span>
+            <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
+              Profil Magang
+            </span>
+          </a>
 
           {isSupervisorOrAdmin && (
             <button

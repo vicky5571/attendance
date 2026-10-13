@@ -35,7 +35,7 @@ export function InternLoginForm({ interns, onSuccess }: InternLoginFormProps) {
 
     if (result.success) {
       if (onSuccess) onSuccess();
-      router.push('/');
+      window.location.href = '/';
     } else {
       setShake(true);
       setErrorMsg(result.error || 'PIN yang dimasukkan salah');

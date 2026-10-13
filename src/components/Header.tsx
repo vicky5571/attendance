@@ -28,22 +28,19 @@ export function Header({ internName, waStatus, onOpenWaModal }: HeaderProps) {
   return (
     <header className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-slate-100 flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {/* IOH Iconic Multi-circle Logo SVG */}
-          <div className="relative w-9 h-9 flex-shrink-0">
-            <svg viewBox="0 0 100 100" className="w-full h-full">
-              <circle cx="38" cy="45" r="28" fill="#FFC72C" opacity="0.9" />
-              <circle cx="62" cy="42" r="26" fill="#ED1C24" opacity="0.85" />
-              <circle cx="50" cy="62" r="28" fill="#ED0278" opacity="0.9" />
-              <circle cx="68" cy="60" r="20" fill="#7C2582" opacity="0.75" />
-            </svg>
-          </div>
-          <div>
+        <div className="flex items-center gap-2.5">
+          {/* IOH Official Brand Logo */}
+          <img
+            src="/icons/logo.png"
+            alt="Indosat Ooredoo Hutchison"
+            className="h-7 sm:h-8 w-auto object-contain flex-shrink-0"
+          />
+          <div className="border-l border-slate-200 pl-2.5 py-0.5">
             <div className="text-xs sm:text-sm font-extrabold text-slate-900 leading-tight tracking-tight">
-              Indosat Ooredoo Hutchison
+              Presensi Magang
             </div>
             <div className="text-[10px] sm:text-[11px] font-medium text-slate-500">
-              Industry-Academia Collaboration
+              IAC Program
             </div>
           </div>
         </div>
@@ -88,6 +85,23 @@ export function Header({ internName, waStatus, onOpenWaModal }: HeaderProps) {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {user.role === 'INTERN' && (
+              <>
+                <a
+                  href="/profile"
+                  className="text-[11px] font-extrabold text-slate-700 hover:text-[#ED0278] transition px-2 py-0.5 rounded-lg hover:bg-slate-50"
+                >
+                  Profil
+                </a>
+                <span className="text-slate-200">|</span>
+                <a
+                  href="/catatan-presensi"
+                  className="text-[11px] font-extrabold text-slate-700 hover:text-[#ED0278] transition px-2 py-0.5 rounded-lg hover:bg-slate-50"
+                >
+                  Catatan
+                </a>
+              </>
+            )}
             {(user.role === 'ADMIN' || user.role === 'SUPERVISOR') && (
               <a
                 href="/admin"

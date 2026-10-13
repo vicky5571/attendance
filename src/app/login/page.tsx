@@ -36,15 +36,22 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#F8FAFC] text-slate-900 flex flex-col items-center justify-center p-4 sm:p-6 font-sans">
-      {/* Dynamic Ambient Glow Mesh Background */}
-      <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-[#FFC72C]/15 blur-3xl pointer-events-none" />
-      <div className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-[#ED0278]/15 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 left-1/3 w-96 h-96 rounded-full bg-[#7C2582]/12 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-[#ED1C24]/12 blur-3xl pointer-events-none" />
-
-      {/* Subtle Dot Grid Texture */}
-      <div className="absolute inset-0 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] [background-size:24px_24px] opacity-25 pointer-events-none" />
+    <div className="min-h-screen bg-[#F8F9FA] text-slate-900 flex flex-col items-center justify-center p-4 sm:p-6 font-sans">
+      <div className="w-full max-w-sm bg-white rounded-3xl p-6 sm:p-7 shadow-xl border border-slate-100 flex flex-col items-center">
+        {/* IOH Brand Header */}
+        <div className="flex items-center justify-center mb-3">
+          <img
+            src="/icons/logo.png"
+            alt="Indosat Ooredoo Hutchison"
+            className="h-10 sm:h-11 w-auto object-contain"
+          />
+        </div>
+        <h1 className="text-lg font-black text-slate-900 tracking-tight text-center">
+          Sistem Presensi Magang
+        </h1>
+        <p className="text-[11px] font-semibold text-slate-400 text-center mt-0.5 mb-5">
+          Indosat Ooredoo Hutchison &bull; IAC Program
+        </p>
 
       {/* Main Container */}
       <div className="relative z-10 w-full max-w-[420px] flex flex-col items-center">
