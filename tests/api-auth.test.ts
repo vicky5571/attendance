@@ -92,6 +92,63 @@ describe('Auth REST APIs (/api/auth)', () => {
       const res = await loginRoute(req);
       assert.equal(res.status, 400);
     });
+
+    it('should authenticate intern with valid email and password via unified login', async () => {
+      const req = new Request('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'sarah@ioh.co.id', password: 'InternIOH2026!' }),
+      });
+      const res = await loginRoute(req);
+      assert.equal(res.status, 200);
+
+      const data = await res.json();
+      assert.equal(data.user.role, 'INTERN');
+      assert.equal(data.user.id, 'intern-sarah');
+      assert.equal(data.user.email, 'sarah@ioh.co.id');
+      assert.equal(data.user.name, 'Sarah Nurhaliza');
+      assert.equal(data.user.divisi, 'Network Operations');
+      assert.ok(res.headers.get('set-cookie')?.includes('ioh_session='));
+    });
+
+    it('should authenticate admin with valid email and password without role specified', async () => {
+      const req = new Request('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'admin@ioh.co.id', password: 'AdminIOH2026!' }),
+      });
+      const res = await loginRoute(req);
+      assert.equal(res.status, 200);
+
+      const data = await res.json();
+      assert.equal(data.user.role, 'ADMIN');
+      assert.equal(data.user.email, 'admin@ioh.co.id');
+      assert.ok(res.headers.get('set-cookie')?.includes('ioh_session='));
+    });
+
+    it('should reject unified login with incorrect password with 401', async () => {
+      const req = new Request('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'sarah@ioh.co.id', password: 'WrongPassword!' }),
+      });
+      const res = await loginRoute(req);
+      assert.equal(res.status, 401);
+      const data = await res.json();
+      assert.match(data.error, /Email atau password/i);
+    });
+
+    it('should reject unified login when email does not exist with 401', async () => {
+      const req = new Request('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'unknown@ioh.co.id', password: 'SomePassword!' }),
+      });
+      const res = await loginRoute(req);
+      assert.equal(res.status, 401);
+      const data = await res.json();
+      assert.match(data.error, /Email atau password/i);
+    });
   });
 
   describe('GET /api/auth/me & POST /api/auth/logout', () => {

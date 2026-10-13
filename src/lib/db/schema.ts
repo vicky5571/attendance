@@ -23,7 +23,10 @@ CREATE TABLE IF NOT EXISTS interns (
   jurusan TEXT NOT NULL,
   periode_magang_selesai TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('ACTIVE', 'COMPLETED')),
-  pin_hash TEXT
+  pin_hash TEXT,
+  email TEXT UNIQUE,
+  password_hash TEXT,
+  assigned_location_id TEXT
 );
 
 CREATE TABLE IF NOT EXISTS attendance_logs (
@@ -113,6 +116,24 @@ export function initSchema(db: DatabaseSync): void {
 
   try {
     db.exec('ALTER TABLE attendance_logs ADD COLUMN photo_url TEXT;');
+  } catch {
+    // Column already exists
+  }
+
+  try {
+    db.exec('ALTER TABLE interns ADD COLUMN email TEXT;');
+  } catch {
+    // Column already exists
+  }
+
+  try {
+    db.exec('ALTER TABLE interns ADD COLUMN password_hash TEXT;');
+  } catch {
+    // Column already exists
+  }
+
+  try {
+    db.exec('ALTER TABLE interns ADD COLUMN assigned_location_id TEXT;');
   } catch {
     // Column already exists
   }

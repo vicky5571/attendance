@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   saveAttendanceCache,
   getAttendanceCache,
+  removeAttendanceCache,
   saveSelectedInternId,
   getSelectedInternId,
   clearAllMemoryCache,
@@ -53,5 +54,16 @@ describe('Client Storage & Offline Caching Helper', () => {
 
     saveSelectedInternId('intern-budi');
     assert.equal(getSelectedInternId('intern-default'), 'intern-budi');
+  });
+
+  it('should remove attendance record from cache', () => {
+    saveAttendanceCache('intern-sarah', '2026-10-08', {
+      in: '08:15',
+      remarks: 'Tepat Waktu',
+    });
+    assert.ok(getAttendanceCache('intern-sarah', '2026-10-08') !== null);
+
+    removeAttendanceCache('intern-sarah', '2026-10-08');
+    assert.equal(getAttendanceCache('intern-sarah', '2026-10-08'), null);
   });
 });

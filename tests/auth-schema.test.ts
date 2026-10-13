@@ -62,4 +62,27 @@ describe('Auth Schema & Seed Integrity', () => {
     const count = db.prepare("SELECT COUNT(*) as cnt FROM users WHERE email = 'admin@ioh.co.id'").get() as { cnt: number };
     assert.equal(count.cnt, 1);
   });
+
+  it('should support email and password_hash columns on interns table and retrieve via getInternByEmail', async () => {
+    const { getInternByEmail } = await import('../src/lib/db/repo.ts');
+    const db = createDatabase(':memory:');
+    initSchema(db);
+
+    db.prepare(`
+      INSERT INTO interns (id, nama_lengkap, email, password_hash, divisi, nama_mentor, email_mentor, universitas, jurusan, periode_magang_selesai, status)
+      VALUES ('intern-test', 'Test Intern', 'test@ioh.co.id', 'hash123', 'Div', 'Mentor', 'mentor@ioh.co.id', 'Univ', 'Maj', '2026-12-31', 'ACTIVE')
+    `).run();
+
+    const intern = getInternByEmail(db, 'test@ioh.co.id');
+    assert.ok(intern, 'Intern should be retrieved by email');
+    assert.equal(intern.id, 'intern-test');
+    assert.equal(intern.email, 'test@ioh.co.id');
+    assert.equal(intern.passwordHash, 'hash123');
+
+    // Case-insensitive email lookup
+    const internUpper = getInternByEmail(db, 'TEST@IOH.CO.ID');
+    assert.ok(internUpper, 'Email lookup should be case-insensitive');
+    assert.equal(internUpper.id, 'intern-test');
+  });
 });
+

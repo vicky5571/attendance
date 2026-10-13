@@ -3,16 +3,25 @@
 import { getCurrentOfficeForIntern } from '@/lib/services/relocation-service';
 
 import React from 'react';
-import type { InternProfile } from '@/types';
+import type { InternProfile, OfficeLocation } from '@/types';
 
 interface ProfileCardProps {
   interns: InternProfile[];
   selectedId: string;
   onSelect?: (id: string) => void;
   locked?: boolean;
+  activeLocation?: OfficeLocation;
+  onChangeOffice?: () => void;
 }
 
-export function ProfileCard({ interns, selectedId, onSelect, locked = false }: ProfileCardProps) {
+export function ProfileCard({
+  interns,
+  selectedId,
+  onSelect,
+  locked = false,
+  activeLocation,
+  onChangeOffice,
+}: ProfileCardProps) {
   const active = interns.find((i) => i.id === selectedId) || interns[0];
 
   return (
@@ -37,7 +46,9 @@ export function ProfileCard({ interns, selectedId, onSelect, locked = false }: P
         {/* Locked Identity Badge vs Switch Dropdown */}
         {locked || !onSelect ? (
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 border border-slate-200/80 text-[11px] font-extrabold text-slate-700 shadow-2xs">
-            <span className="text-[#ED0278]">🔒</span>
+            <svg className="w-3.5 h-3.5 text-[#ED0278]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
             <span>ID: {active?.id || selectedId}</span>
           </div>
         ) : (
@@ -73,7 +84,38 @@ export function ProfileCard({ interns, selectedId, onSelect, locked = false }: P
         </div>
       </div>
 
-      <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+      {/* Office Hub Location Badge & Change CTA */}
+      {activeLocation && (
+        <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0 pr-2">
+            <div className="w-6 h-6 rounded-lg bg-pink-50 text-[#ED0278] flex items-center justify-center shrink-0">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div className="truncate">
+              <span className="text-[9px] text-slate-400 font-extrabold block uppercase leading-none">
+                Lokasi Kerja / Hub
+              </span>
+              <span className="text-xs font-black text-slate-800 truncate block mt-0.5">
+                {activeLocation.name}
+              </span>
+            </div>
+          </div>
+          {onChangeOffice && (
+            <button
+              type="button"
+              onClick={onChangeOffice}
+              className="px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 hover:border-[#ED0278] hover:bg-pink-50/20 text-[#ED0278] text-[10px] font-extrabold transition shadow-2xs cursor-pointer shrink-0"
+            >
+              Ganti Kantor
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
         <div>
           Mentor: <strong className="text-slate-800">{active?.namaMentor}</strong>
         </div>

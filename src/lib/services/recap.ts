@@ -148,11 +148,11 @@ export function aggregateDailyRecap(db: DatabaseSync, date: string): DailyRecapS
  */
 export function formatDailyInternsReport(summary: DailyRecapSummary): string {
   const lines: string[] = [
-    `📊 *REKAP PRESENSI MAGANG INDOSAT*`,
-    `📅 Tanggal: ${summary.date}`,
-    `👥 Total: ${summary.totalActive} | Hadir/WFH: ${summary.presentCount} | Izin/Sakit: ${(summary.sickCount || 0) + (summary.permitCount || 0)} | Alpha: ${summary.absentCount}`,
+    `*REKAP PRESENSI MAGANG INDOSAT*`,
+    `Tanggal: ${summary.date}`,
+    `Total: ${summary.totalActive} | Hadir/WFH: ${summary.presentCount} | Izin/Sakit: ${(summary.sickCount || 0) + (summary.permitCount || 0)} | Alpha: ${summary.absentCount}`,
     '',
-    `✅ *Daftar Hadir & Remote:*`,
+    `*Daftar Hadir & Remote:*`,
   ];
 
   const presentItems = summary.items.filter((i) => i.status !== 'ABSENT');
@@ -161,11 +161,11 @@ export function formatDailyInternsReport(summary: DailyRecapSummary): string {
   } else {
     for (const item of presentItems) {
       if (item.status === 'WFH') {
-        lines.push(`• *${item.namaLengkap}* (${item.divisi}) - 🏡 [WFH: ${item.remarks || 'Remote'}]`);
+        lines.push(`• *${item.namaLengkap}* (${item.divisi}) - [WFH: ${item.remarks || 'Remote'}]`);
       } else if (item.status === 'SAKIT') {
-        lines.push(`• *${item.namaLengkap}* (${item.divisi}) - 🏥 [SAKIT: ${item.remarks || 'Surat Dokter'}]`);
+        lines.push(`• *${item.namaLengkap}* (${item.divisi}) - [SAKIT: ${item.remarks || 'Surat Dokter'}]`);
       } else if (item.status === 'IZIN' || item.status === 'DISPENSASI') {
-        lines.push(`• *${item.namaLengkap}* (${item.divisi}) - 📝 [IZIN: ${item.remarks || 'Dispensasi'}]`);
+        lines.push(`• *${item.namaLengkap}* (${item.divisi}) - [IZIN: ${item.remarks || 'Dispensasi'}]`);
       } else {
         const timeIn = item.checkInTime ? item.checkInTime.slice(0, 5) : '-';
         const timeOut = item.checkOutTime ? ` (Pulang: ${item.checkOutTime.slice(0, 5)})` : '';
@@ -175,7 +175,7 @@ export function formatDailyInternsReport(summary: DailyRecapSummary): string {
     }
   }
 
-  lines.push('', `❌ *Belum Hadir / Alpha:*`);
+  lines.push('', `*Belum Hadir / Alpha:*`);
   const absentItems = summary.items.filter((i) => i.status === 'ABSENT');
   if (absentItems.length === 0) {
     lines.push('_Semua intern hadir hari ini._');
@@ -193,15 +193,15 @@ export function formatDailyInternsReport(summary: DailyRecapSummary): string {
  */
 export function formatMentorGroupRecap(summary: DailyRecapSummary): string {
   const lines: string[] = [
-    `📑 *RINGKASAN DIVISI MENTOR - INDOSAT INTERNSHIP*`,
-    `📅 Tanggal: ${summary.date}`,
-    `📊 Kehadiran Total: ${summary.presentCount}/${summary.totalActive} (${Math.round((summary.presentCount / (summary.totalActive || 1)) * 100)}%)`,
+    `*RINGKASAN DIVISI MENTOR - INDOSAT INTERNSHIP*`,
+    `Tanggal: ${summary.date}`,
+    `Kehadiran Total: ${summary.presentCount}/${summary.totalActive} (${Math.round((summary.presentCount / (summary.totalActive || 1)) * 100)}%)`,
     '',
   ];
 
   for (const div of summary.divisionBreakdowns) {
     const rate = Math.round((div.present / (div.totalInterns || 1)) * 100);
-    lines.push(`🏢 *Divisi: ${div.division}*`);
+    lines.push(`*Divisi: ${div.division}*`);
     lines.push(`  • Kehadiran: ${div.present}/${div.totalInterns} (${rate}%)`);
     lines.push(`  • Tepat Waktu / Hadir: ${div.present}`);
     lines.push(`  • Terlambat: ${div.late}`);

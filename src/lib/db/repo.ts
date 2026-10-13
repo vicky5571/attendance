@@ -30,6 +30,9 @@ interface InternRow {
   periode_magang_selesai: string;
   status: 'ACTIVE' | 'COMPLETED';
   pin_hash?: string | null;
+  email?: string | null;
+  password_hash?: string | null;
+  assigned_location_id?: string | null;
 }
 
 interface AttendanceRow {
@@ -80,6 +83,9 @@ function mapInternRow(row: InternRow): InternProfile {
     status: row.status,
   };
   if (row.pin_hash) profile.pinHash = row.pin_hash;
+  if (row.email) profile.email = row.email;
+  if (row.password_hash) profile.passwordHash = row.password_hash;
+  if (row.assigned_location_id) profile.assignedLocationId = row.assigned_location_id;
   return profile;
 }
 
@@ -153,8 +159,9 @@ export function createIntern(db: DatabaseSync, intern: InternProfile): void {
   const stmt = db.prepare(`
     INSERT INTO interns (
       id, nama_lengkap, divisi, nama_mentor, email_mentor,
-      universitas, jurusan, periode_magang_selesai, status, pin_hash
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      universitas, jurusan, periode_magang_selesai, status, pin_hash,
+      email, password_hash, assigned_location_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   stmt.run(
     intern.id,
@@ -166,13 +173,33 @@ export function createIntern(db: DatabaseSync, intern: InternProfile): void {
     intern.jurusan,
     intern.periodeMagangSelesai,
     intern.status,
-    intern.pinHash || null
+    intern.pinHash || null,
+    intern.email ? intern.email.toLowerCase().trim() : null,
+    intern.passwordHash || null,
+    intern.assignedLocationId || null
   );
+}
+
+export function updateInternLocation(
+  db: DatabaseSync,
+  internId: string,
+  locationId: string
+): void {
+  const stmt = db.prepare(`
+    UPDATE interns SET assigned_location_id = ? WHERE id = ?
+  `);
+  stmt.run(locationId, internId);
 }
 
 export function getIntern(db: DatabaseSync, id: string): InternProfile | null {
   const stmt = db.prepare('SELECT * FROM interns WHERE id = ?');
   const row = stmt.get(id) as unknown as InternRow | undefined;
+  return row ? mapInternRow(row) : null;
+}
+
+export function getInternByEmail(db: DatabaseSync, email: string): InternProfile | null {
+  const stmt = db.prepare('SELECT * FROM interns WHERE LOWER(email) = ?');
+  const row = stmt.get(email.toLowerCase().trim()) as unknown as InternRow | undefined;
   return row ? mapInternRow(row) : null;
 }
 
@@ -267,4 +294,9 @@ export function listAttendanceByDate(db: DatabaseSync, date: string): Attendance
   const stmt = db.prepare('SELECT * FROM attendance_logs WHERE date = ? ORDER BY check_in_time ASC');
   const rows = stmt.all(date) as unknown as AttendanceRow[];
   return rows.map(mapAttendanceRow);
+}
+
+export function deleteAttendanceRecord(db: DatabaseSync, internId: string, date: string): void {
+  const stmt = db.prepare('DELETE FROM attendance_logs WHERE intern_id = ? AND date = ?');
+  stmt.run(internId, date);
 }

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 
@@ -13,7 +13,11 @@ export function WhatsAppWidget({ status, qr, onConnect }: WhatsAppWidgetProps) {
     <div className="flex flex-col gap-3">
       <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3 px-4 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <span className="text-xl">💬</span>
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </div>
           <div>
             <div className="text-xs font-semibold text-slate-200">WhatsApp Bot Service</div>
             <div className="text-[11px] text-slate-400 capitalize">

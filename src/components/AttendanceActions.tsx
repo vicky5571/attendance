@@ -11,6 +11,7 @@ interface AttendanceActionsProps {
   savedRemarks?: string;
   workStartTime?: string;
   workEndTime?: string;
+  simulatedTimeStr?: string;
   onCheckIn: () => void;
   onCheckOut: () => void;
 }
@@ -23,6 +24,7 @@ export function AttendanceActions({
   savedRemarks,
   workStartTime = '08:30',
   workEndTime = '17:30',
+  simulatedTimeStr,
   onCheckIn,
   onCheckOut,
 }: AttendanceActionsProps) {
@@ -42,8 +44,10 @@ export function AttendanceActions({
     return () => clearInterval(interval);
   }, []);
 
+  const effectiveTimeStr = simulatedTimeStr || currentTimeStr;
+
   const livePreview = computeLiveRemarkPreview(
-    currentTimeStr,
+    effectiveTimeStr,
     isCheckedIn,
     isCompleted,
     workStartTime,
@@ -63,7 +67,16 @@ export function AttendanceActions({
                   : 'bg-amber-500 animate-pulse'
               }`}
             />
-            <span>Estimasi Status:</span>
+            <span>
+              Estimasi Status
+              {simulatedTimeStr ? (
+                <span className="ml-1 text-[10px] text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">
+                  Simulasi {simulatedTimeStr}
+                </span>
+              ) : (
+                ':'
+              )}
+            </span>
           </div>
           <div
             className={`font-extrabold flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] ${
@@ -72,7 +85,15 @@ export function AttendanceActions({
                 : 'bg-amber-50 text-amber-800 border border-amber-200'
             }`}
           >
-            <span>{livePreview.badgeColor === 'emerald' ? '✓' : '⚠️'}</span>
+            {livePreview.badgeColor === 'emerald' ? (
+              <svg className="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            )}
             <span>{livePreview.remarks}</span>
           </div>
         </div>
@@ -89,7 +110,9 @@ export function AttendanceActions({
               : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
           }`}
         >
-          <span>☀️</span>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+          </svg>
           <span>{loading ? 'Menghubungkan...' : 'Check-In Kehadiran'}</span>
         </button>
       ) : !isCompleted ? (
@@ -102,12 +125,16 @@ export function AttendanceActions({
               : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
           }`}
         >
-          <span>🌙</span>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
           <span>{loading ? 'Menghubungkan...' : 'Check-Out (Selesai Kerja)'}</span>
         </button>
       ) : (
         <div className="w-full py-3.5 px-6 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-extrabold text-xs text-center flex items-center justify-center gap-2">
-          <span>🎉</span>
+          <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
           <span>Presensi Hari Ini Lengkap</span>
         </div>
       )}
@@ -128,7 +155,13 @@ export function AttendanceActions({
               isCheckedIn ? 'bg-[#ED0278] text-white' : 'bg-slate-100 text-slate-400'
             }`}
           >
-            {isCheckedIn ? '✓' : '1'}
+            {isCheckedIn ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              '1'
+            )}
           </div>
           <div>
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Jam Masuk</div>
@@ -144,7 +177,13 @@ export function AttendanceActions({
               isCompleted ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'
             }`}
           >
-            {isCompleted ? '✓' : '2'}
+            {isCompleted ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              '2'
+            )}
           </div>
           <div>
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Jam Pulang</div>

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 
@@ -18,13 +18,17 @@ export function WhatsAppModal({ isOpen, onClose, status, qr, onConnect }: WhatsA
       <div className="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl flex flex-col items-center border border-slate-100">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center text-sm font-bold"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center cursor-pointer transition"
         >
-          ✕
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
 
-        <div className="w-12 h-12 rounded-2xl bg-[#ED0278]/10 text-[#ED0278] flex items-center justify-center text-2xl mb-3">
-          💬
+        <div className="w-12 h-12 rounded-2xl bg-[#ED0278]/10 text-[#ED0278] flex items-center justify-center mb-3">
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
         </div>
 
         <h3 className="text-base font-extrabold text-slate-900">WhatsApp Bot Integration</h3>
@@ -34,7 +38,11 @@ export function WhatsAppModal({ isOpen, onClose, status, qr, onConnect }: WhatsA
 
         {status === 'open' ? (
           <div className="p-5 rounded-2xl bg-emerald-50 text-center w-full border border-emerald-200">
-            <span className="text-3xl">🎉</span>
+            <div className="w-10 h-10 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 mb-2">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
             <div className="text-sm font-bold text-emerald-800 mt-2">WhatsApp Berhasil Terhubung!</div>
             <p className="text-xs text-emerald-600 mt-1">Notifikasi kehadiran aktif otomatis.</p>
           </div>

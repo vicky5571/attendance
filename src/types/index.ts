@@ -19,6 +19,9 @@ export interface InternProfile {
   periodeMagangSelesai: string; // ISO Date YYYY-MM-DD
   status: 'ACTIVE' | 'COMPLETED';
   pinHash?: string;
+  email?: string;
+  passwordHash?: string;
+  assignedLocationId?: string;
 }
 
 export type AttendanceStatus = 'ON_TIME' | 'LATE' | 'EARLY_DEPARTURE' | 'ABSENT';
@@ -165,7 +168,12 @@ export interface AdminLoginPayload {
   password: string;
 }
 
-export type LoginPayload = InternLoginPayload | AdminLoginPayload;
+export interface UnifiedLoginPayload {
+  email: string;
+  password: string;
+}
+
+export type LoginPayload = UnifiedLoginPayload | InternLoginPayload | AdminLoginPayload;
 
 export interface AuthResponseUser {
   id: string;

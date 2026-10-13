@@ -1,7 +1,11 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { findMatchingLocation } from '../src/lib/geo.ts';
-import { GET as getLocations, POST as postLocation } from '../src/app/api/config/locations/route.ts';
+import {
+  GET as getLocations,
+  POST as postLocation,
+  DELETE as deleteLocation,
+} from '../src/app/api/config/locations/route.ts';
 import { POST as checkInRoute } from '../src/app/api/attendance/check-in/route.ts';
 import { createDatabase, setDatabase } from '../src/lib/db/client.ts';
 import { initSchema } from '../src/lib/db/schema.ts';
@@ -143,6 +147,20 @@ describe('Multi-Office Geofencing Hub Engine', () => {
       const data = await res.json();
       assert.ok(data.location.id);
       assert.equal(data.location.name, 'Indosat Surabaya Hub');
+    });
+
+    it('DELETE should remove an office location by id', async () => {
+      const deleteReq = new Request('http://localhost:3000/api/config/locations?id=loc-kppti', {
+        method: 'DELETE',
+      });
+      const res = await deleteLocation(deleteReq);
+      assert.equal(res.status, 200);
+
+      // Verify deletion
+      const listReq = new Request('http://localhost:3000/api/config/locations');
+      const listRes = await getLocations(listReq);
+      const data = await listRes.json();
+      assert.ok(!data.locations.some((l: any) => l.id === 'loc-kppti'));
     });
   });
 

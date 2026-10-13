@@ -49,6 +49,8 @@ export const INITIAL_INTERNS: InternProfile[] = [
     periodeMagangSelesai: '2026-12-31',
     status: 'ACTIVE',
     pinHash: '123456',
+    email: 'zacky@ioh.co.id',
+    passwordHash: hashPassword('InternIOH2026!'),
   },
   {
     id: 'intern-sarah',
@@ -61,6 +63,8 @@ export const INITIAL_INTERNS: InternProfile[] = [
     periodeMagangSelesai: '2026-12-31',
     status: 'ACTIVE',
     pinHash: '123456',
+    email: 'sarah@ioh.co.id',
+    passwordHash: hashPassword('InternIOH2026!'),
   },
 ];
 
@@ -92,8 +96,16 @@ export function seedDatabase(db: DatabaseSync): void {
     const existing = getIntern(db, intern.id);
     if (!existing) {
       createIntern(db, intern);
-    } else if (!existing.pinHash && intern.pinHash) {
-      db.prepare('UPDATE interns SET pin_hash = ? WHERE id = ?').run(intern.pinHash, intern.id);
+    } else {
+      if (!existing.pinHash && intern.pinHash) {
+        db.prepare('UPDATE interns SET pin_hash = ? WHERE id = ?').run(intern.pinHash, intern.id);
+      }
+      if (!existing.email && intern.email) {
+        db.prepare('UPDATE interns SET email = ? WHERE id = ?').run(intern.email, intern.id);
+      }
+      if (!existing.passwordHash && intern.passwordHash) {
+        db.prepare('UPDATE interns SET password_hash = ? WHERE id = ?').run(intern.passwordHash, intern.id);
+      }
     }
   }
 
@@ -119,5 +131,5 @@ export function seedDatabase(db: DatabaseSync): void {
 if (process.argv[1]?.endsWith('seed.ts') || process.argv[1]?.endsWith('seed.js')) {
   const db = getDatabase();
   seedDatabase(db);
-  console.log('✅ SQLite database seeded successfully.');
+  console.log('[OK] SQLite database seeded successfully.');
 }

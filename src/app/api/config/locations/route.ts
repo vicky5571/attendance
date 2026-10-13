@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { getDatabase } from '../../../../lib/db/client.ts';
-import { listOfficeLocations, createOfficeLocation } from '../../../../lib/db/locations-repo.ts';
+import {
+  listOfficeLocations,
+  createOfficeLocation,
+  deleteOfficeLocation,
+} from '../../../../lib/db/locations-repo.ts';
 import type { OfficeLocation } from '../../../../types/index.ts';
 
 export async function GET(req: Request) {
@@ -48,6 +52,40 @@ export async function POST(req: Request) {
     return Response.json(
       { message: 'Office location berhasil ditambahkan', location: newLocation },
       { status: 201 }
+    );
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : 'Internal Server Error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return Response.json(
+        { error: 'Parameter id wajib disertakan' },
+        { status: 400 }
+      );
+    }
+
+    const db = getDatabase();
+    const deleted = deleteOfficeLocation(db, id);
+
+    if (!deleted) {
+      return Response.json(
+        { error: `Lokasi kantor dengan ID ${id} tidak ditemukan` },
+        { status: 404 }
+      );
+    }
+
+    return Response.json(
+      { message: 'Lokasi kantor berhasil dihapus' },
+      { status: 200 }
     );
   } catch (error) {
     return Response.json(

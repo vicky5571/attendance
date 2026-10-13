@@ -12,16 +12,26 @@ import { PinModal } from '@/components/PinModal';
 import { RequestModal } from '@/components/RequestModal';
 import { HistoryModal } from '@/components/HistoryModal';
 import { MentorApprovalModal } from '@/components/MentorApprovalModal';
+import { ChangeOfficeModal } from '@/components/ChangeOfficeModal';
+import { DevTimeBar } from '@/components/dev/DevTimeBar';
 import { calculateDistance, isWithinRadius } from '@/lib/client-geo';
 import {
   saveAttendanceCache,
   getAttendanceCache,
+  removeAttendanceCache,
+  saveSelectedOffice,
+  getSelectedOffice,
 } from '@/lib/client-storage';
 import type { OfficeConfig, InternProfile, OfficeLocation } from '@/types';
 
 export default function AttendancePage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [config, setConfig] = useState<OfficeConfig | null>(null);
   const [interns, setInterns] = useState<InternProfile[]>([]);
@@ -41,13 +51,14 @@ export default function AttendancePage() {
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+  const [isOfficeModalOpen, setIsOfficeModalOpen] = useState(false);
 
   // Route Authentication Guard
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (mounted && !isLoading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [mounted, isLoading, isAuthenticated, router]);
 
   // Fetch pending approvals count (if admin / mentor)
   const fetchPendingCount = () => {
@@ -78,6 +89,11 @@ export default function AttendancePage() {
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [todayStr, setTodayStr] = useState<string>('');
 
+  // Simulated time and date for development mode testing
+  const [simulatedTime, setSimulatedTime] = useState<string | null>(null);
+  const [simulatedDate, setSimulatedDate] = useState<string | null>(null);
+  const [isResettingAttendance, setIsResettingAttendance] = useState(false);
+
   const notify = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
@@ -91,7 +107,7 @@ export default function AttendancePage() {
     Promise.all([
       fetch('/api/config').then((r) => r.json()),
       fetch('/api/interns').then((r) => r.json()),
-      fetch('/api/config/locations').then((r) => (r.ok ? r.json() : [])),
+      fetch('/api/config/locations').then((r) => (r.ok ? r.json() : { locations: [] })),
     ]).then(([cfg, ints, locs]) => {
       setConfig(cfg);
       setInterns(ints);
@@ -109,13 +125,13 @@ export default function AttendancePage() {
   }, []);
 
   // Sync attendance state on authenticated intern
-  const syncAttendanceStatus = () => {
+  const syncAttendanceStatus = (targetDateOverride?: string) => {
     if (!currentInternId) return;
-    const today = new Date().toISOString().split('T')[0];
-    setTodayStr(today);
+    const activeDate = targetDateOverride || simulatedDate || new Date().toISOString().split('T')[0];
+    setTodayStr(activeDate);
 
     // 1. Instant optimistic restore from local storage cache
-    const cached = getAttendanceCache(currentInternId, today);
+    const cached = getAttendanceCache(currentInternId, activeDate);
     if (cached) {
       setRecords({ in: cached.in, out: cached.out, remarks: cached.remarks });
     } else {
@@ -123,7 +139,7 @@ export default function AttendancePage() {
     }
 
     // 2. Query ground truth from server API
-    fetch(`/api/attendance/status?internId=${encodeURIComponent(currentInternId)}&date=${today}`)
+    fetch(`/api/attendance/status?internId=${encodeURIComponent(currentInternId)}&date=${activeDate}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.record) {
@@ -131,11 +147,11 @@ export default function AttendancePage() {
           const outTime = data.record.checkOutTime ? data.record.checkOutTime.slice(0, 5) : undefined;
           const newRec = { in: inTime, out: outTime, remarks: data.record.remarks };
           setRecords(newRec);
-          saveAttendanceCache(currentInternId, today, {
+          saveAttendanceCache(currentInternId, activeDate, {
             ...newRec,
             status: data.record.status,
           });
-        } else if (!cached) {
+        } else {
           setRecords({});
         }
       })
@@ -146,9 +162,31 @@ export default function AttendancePage() {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      syncAttendanceStatus();
+      syncAttendanceStatus(simulatedDate || undefined);
     }
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user?.id, simulatedDate]);
+
+  const handleResetTodayAttendance = async () => {
+    const activeDate = simulatedDate || todayStr || new Date().toISOString().split('T')[0];
+    setIsResettingAttendance(true);
+    try {
+      const res = await fetch(
+        `/api/attendance/status?internId=${encodeURIComponent(currentInternId)}&date=${activeDate}`,
+        { method: 'DELETE' }
+      );
+      if (res.ok) {
+        removeAttendanceCache(currentInternId, activeDate);
+        setRecords({});
+        notify(`Status absensi ${activeDate} berhasil di-reset untuk pengujian ulang`, 'success');
+      } else {
+        notify('Gagal mereset status absensi', 'error');
+      }
+    } catch {
+      notify('Koneksi server gagal', 'error');
+    } finally {
+      setIsResettingAttendance(false);
+    }
+  };
 
   useEffect(() => {
     const pollWa = () =>
@@ -171,6 +209,18 @@ export default function AttendancePage() {
 
   const handleLocationChange = (newLocationId: string) => {
     setSelectedLocationId(newLocationId);
+    saveSelectedOffice(currentInternId, newLocationId);
+
+    // Persist to server backend
+    fetch('/api/interns', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        internId: currentInternId,
+        locationId: newLocationId,
+      }),
+    }).catch(() => {});
+
     const loc = locations.find((l) => l.id === newLocationId);
     if (loc) {
       if (isSimulated) {
@@ -180,6 +230,7 @@ export default function AttendancePage() {
         const d = calculateDistance(coords.lat, coords.lng, loc.latitude, loc.longitude);
         setDistance(d);
       }
+      notify(`Kantor berhasil diubah ke: ${loc.name}`, 'success');
     }
   };
 
@@ -225,6 +276,9 @@ export default function AttendancePage() {
   const executeAttendanceWithPin = async (pin: string): Promise<boolean> => {
     if (!coords || !pendingActionType) return false;
     setActionLoading(true);
+    const targetDate = simulatedDate || todayStr || new Date().toISOString().split('T')[0];
+    const timestampPayload = simulatedTime ? `${targetDate}T${simulatedTime}:00` : undefined;
+
     try {
       const res = await fetch(`/api/attendance/${pendingActionType}`, {
         method: 'POST',
@@ -235,24 +289,39 @@ export default function AttendancePage() {
           longitude: coords.lng,
           pin,
           locationId: selectedLocationId,
+          timestamp: timestampPayload,
         }),
       });
       const data = await res.json();
       if (res.ok) {
+        const rawCheckIn = data.checkInTime || data.record?.checkInTime;
+        const rawCheckOut = data.checkOutTime || data.record?.checkOutTime;
         const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-        const serverRemarks = data.record?.remarks || (pendingActionType === 'check-in' ? 'Tepat Waktu' : records.remarks);
-        const updated = pendingActionType === 'check-in'
-          ? { ...records, in: now, remarks: serverRemarks }
-          : { ...records, out: now, remarks: serverRemarks };
+
+        const recordedTime =
+          (pendingActionType === 'check-in' ? rawCheckIn : rawCheckOut)?.slice(0, 5) ||
+          simulatedTime ||
+          now;
+
+        const serverRemarks =
+          data.remarks ||
+          data.record?.remarks ||
+          (pendingActionType === 'check-in' ? 'Tepat Waktu' : records.remarks);
+
+        const updated =
+          pendingActionType === 'check-in'
+            ? { ...records, in: recordedTime, remarks: serverRemarks }
+            : { ...records, out: recordedTime, remarks: serverRemarks };
+
         setRecords(updated);
-        const currentDate = todayStr || new Date().toISOString().split('T')[0];
-        saveAttendanceCache(currentInternId, currentDate, updated);
+        saveAttendanceCache(currentInternId, targetDate, updated);
         notify(`Berhasil ${pendingActionType === 'check-in' ? 'Check-In' : 'Check-Out'}!`, 'success');
         setPinModalOpen(false);
         setPendingActionType(null);
         setActionLoading(false);
         return true;
       } else {
+        notify(data.error || 'Autentikasi absensi gagal', 'error');
         setActionLoading(false);
         return false;
       }
@@ -272,7 +341,7 @@ export default function AttendancePage() {
     }
   };
 
-  if (isLoading) {
+  if (!mounted || isLoading) {
     return (
       <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
         <div className="flex flex-col items-center gap-2">
@@ -325,6 +394,18 @@ export default function AttendancePage() {
           onOpenWaModal={() => setIsWaModalOpen(true)}
         />
 
+        {/* Development Mode Time Manipulation & Reset Toolbar */}
+        {process.env.NODE_ENV !== 'production' && (
+          <DevTimeBar
+            simulatedTime={simulatedTime}
+            simulatedDate={simulatedDate}
+            onSetSimulatedTime={setSimulatedTime}
+            onSetSimulatedDate={setSimulatedDate}
+            onResetTodayAttendance={handleResetTodayAttendance}
+            isResetting={isResettingAttendance}
+          />
+        )}
+
         {/* Enterprise Quick-Action Toolbar */}
         <div className={`grid ${isSupervisorOrAdmin ? 'grid-cols-4' : 'grid-cols-3'} gap-2`}>
           <button
@@ -332,7 +413,9 @@ export default function AttendancePage() {
             onClick={() => setRequestModalOpen(true)}
             className="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
           >
-            <span className="text-base mb-0.5">✍️</span>
+            <svg className="w-4 h-4 mb-1 text-slate-600 group-hover:text-[#ED0278] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
             <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
               Izin / WFH
             </span>
@@ -343,7 +426,9 @@ export default function AttendancePage() {
             onClick={() => setHistoryModalOpen(true)}
             className="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
           >
-            <span className="text-base mb-0.5">📊</span>
+            <svg className="w-4 h-4 mb-1 text-slate-600 group-hover:text-[#ED0278] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
             <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
               Catatan Presensi
             </span>
@@ -363,14 +448,16 @@ export default function AttendancePage() {
             <button
               type="button"
               onClick={() => setApprovalModalOpen(true)}
-              className="relative flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
+              className="relative flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center group"
             >
               {pendingApprovalsCount > 0 && (
                 <span className="absolute -top-1.5 -right-1 bg-[#ED0278] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-md animate-pulse">
                   {pendingApprovalsCount}
                 </span>
               )}
-              <span className="text-base mb-0.5">🛡️</span>
+              <svg className="w-4 h-4 mb-1 text-slate-600 group-hover:text-[#ED0278] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
               <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
                 Persetujuan Mentor
               </span>
@@ -378,11 +465,13 @@ export default function AttendancePage() {
           )}
         </div>
 
-        {/* Locked Profile Card (Impersonation Prevented) */}
+        {/* Locked Profile Card with Active Office & Change CTA */}
         <ProfileCard
           interns={interns}
           selectedId={currentInternId}
           locked={true}
+          activeLocation={activeLocation}
+          onChangeOffice={() => setIsOfficeModalOpen(true)}
         />
 
         {/* Radar Geofence Card with Multi-Hub Locations */}
@@ -408,6 +497,7 @@ export default function AttendancePage() {
           savedRemarks={records.remarks}
           workStartTime={config?.workStartTime}
           workEndTime={config?.workEndTime}
+          simulatedTimeStr={simulatedTime || undefined}
           onCheckIn={() => initiateAttendance('check-in')}
           onCheckOut={() => initiateAttendance('check-out')}
         />
@@ -467,6 +557,14 @@ export default function AttendancePage() {
           }}
         />
       )}
+      {/* Change Office Location Modal */}
+      <ChangeOfficeModal
+        isOpen={isOfficeModalOpen}
+        onClose={() => setIsOfficeModalOpen(false)}
+        locations={locations}
+        selectedLocationId={selectedLocationId}
+        onSelectLocation={handleLocationChange}
+      />
     </div>
   );
 }
