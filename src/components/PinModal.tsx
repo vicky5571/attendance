@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface PinModalProps {
   isOpen: boolean;
@@ -21,16 +21,32 @@ export function PinModal({
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [shake, setShake] = useState(false);
+  const [isFocused, setIsFocused] = useState(true);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       setPin('');
       setErrorMsg('');
       setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  const triggerSubmit = async (fullPin: string) => {
+    if (loading) return;
+    setLoading(true);
+    setErrorMsg('');
+    const success = await onSubmit(fullPin);
+    setLoading(false);
+    if (!success) {
+      setShake(true);
+      setErrorMsg('PIN salah. Silakan coba lagi (Default: 123456)');
+      setTimeout(() => setShake(false), 500);
+      setPin('');
+      inputRef.current?.focus();
+    }
+  };
 
   const handleDigit = (digit: string) => {
     if (pin.length < 6) {
@@ -51,20 +67,36 @@ export function PinModal({
   const handleClear = () => {
     setPin('');
     setErrorMsg('');
+    inputRef.current?.focus();
   };
 
-  const triggerSubmit = async (fullPin: string) => {
-    setLoading(true);
-    setErrorMsg('');
-    const success = await onSubmit(fullPin);
-    setLoading(false);
-    if (!success) {
-      setShake(true);
-      setErrorMsg('PIN salah. Silakan coba lagi (Default: 123456)');
-      setTimeout(() => setShake(false), 500);
-      setPin('');
-    }
-  };
+  // Keyboard shortcut listener when modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        handleDigit(e.key);
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        handleDelete();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === 'Enter') {
+        if (pin.length === 6) {
+          e.preventDefault();
+          triggerSubmit(pin);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, pin, loading]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
@@ -83,7 +115,7 @@ export function PinModal({
         <h3 className="text-base font-extrabold text-slate-900 text-center tracking-tight">
           Verifikasi PIN Presensi
         </h3>
-        <p className="text-xs text-slate-500 text-center mt-1 px-4">
+        <p className="text-xs text-slate-500 text-center mt-1 px-4 mb-4">
           Masukkan 6-digit PIN untuk konfirmasi{' '}
           <span className="font-bold text-slate-800">
             {actionType === 'check-in' ? 'Check-In' : 'Check-Out'}
@@ -91,39 +123,83 @@ export function PinModal({
           peserta <span className="font-semibold text-[#ED0278]">{internName}</span>
         </p>
 
-        {/* PIN Dots Display */}
-        <div className="flex items-center gap-3 my-6">
-          {[0, 1, 2, 3, 4, 5].map((idx) => {
-            const isFilled = idx < pin.length;
-            return (
-              <div
-                key={idx}
-                className={`w-4 h-4 rounded-full transition-all duration-200 border-2 ${
-                  isFilled
-                    ? 'bg-[#ED0278] border-[#ED0278] scale-110 shadow-sm shadow-pink-500/30'
-                    : 'bg-slate-100 border-slate-200'
-                }`}
-              />
-            );
-          })}
+        {/* 6-Cell Interactive PIN Display with Hidden Keyboard Input */}
+        <div
+          onClick={() => inputRef.current?.focus()}
+          className="relative cursor-pointer flex flex-col items-center mb-4 group"
+        >
+          <input
+            ref={inputRef}
+            type="password"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={6}
+            value={pin}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+              setPin(val);
+              setErrorMsg('');
+              if (val.length === 6) {
+                triggerSubmit(val);
+              }
+            }}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            disabled={loading}
+            className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+            autoComplete="off"
+          />
+
+          <div className="flex items-center gap-2.5">
+            {[0, 1, 2, 3, 4, 5].map((idx) => {
+              const isFilled = idx < pin.length;
+              const isCurrent = isFocused && idx === pin.length;
+
+              return (
+                <div
+                  key={idx}
+                  className={`w-10 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 border-2 ${
+                    isFilled
+                      ? 'bg-[#ED0278]/5 border-[#ED0278] shadow-sm shadow-pink-500/10'
+                      : isCurrent
+                      ? 'bg-white border-[#ED0278] ring-4 ring-[#ED0278]/15 scale-105'
+                      : 'bg-slate-50 border-slate-200/90 group-hover:border-slate-300'
+                  }`}
+                >
+                  {isFilled ? (
+                    <span className="w-3 h-3 rounded-full bg-[#ED0278] transition-all scale-100" />
+                  ) : isCurrent ? (
+                    <span className="w-1.5 h-3.5 bg-[#ED0278] rounded-full animate-pulse" />
+                  ) : (
+                    <span className="w-2 h-2 rounded-full bg-slate-300/60" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-1.5 mt-2.5 text-[11px] font-semibold text-slate-400">
+            <span>⌨️</span>
+            <span>Ketik via keyboard PC atau gunakan keypad</span>
+          </div>
         </div>
 
         {/* Error Feedback */}
         {errorMsg && (
-          <div className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl mb-4 text-center">
+          <div className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3.5 py-1.5 rounded-xl mb-3 text-center">
             {errorMsg}
           </div>
         )}
 
         {/* Numeric Keypad */}
-        <div className="grid grid-cols-3 gap-3 w-full max-w-[260px] mb-4">
+        <div className="grid grid-cols-3 gap-2.5 w-full max-w-[260px] mb-4">
           {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
             <button
               key={num}
               type="button"
               disabled={loading || pin.length >= 6}
               onClick={() => handleDigit(num)}
-              className="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-800 font-extrabold text-lg transition flex items-center justify-center cursor-pointer shadow-xs border border-slate-100"
+              className="h-11 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-800 font-extrabold text-lg transition flex items-center justify-center cursor-pointer shadow-2xs border border-slate-100"
             >
               {num}
             </button>
@@ -132,7 +208,7 @@ export function PinModal({
             type="button"
             disabled={loading || pin.length === 0}
             onClick={handleClear}
-            className="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-500 font-bold text-xs uppercase transition flex items-center justify-center cursor-pointer border border-slate-100"
+            className="h-11 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-500 font-bold text-xs uppercase transition flex items-center justify-center cursor-pointer border border-slate-100"
           >
             Clear
           </button>
@@ -140,7 +216,7 @@ export function PinModal({
             type="button"
             disabled={loading || pin.length >= 6}
             onClick={() => handleDigit('0')}
-            className="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-800 font-extrabold text-lg transition flex items-center justify-center cursor-pointer shadow-xs border border-slate-100"
+            className="h-11 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-800 font-extrabold text-lg transition flex items-center justify-center cursor-pointer shadow-2xs border border-slate-100"
           >
             0
           </button>
@@ -148,7 +224,7 @@ export function PinModal({
             type="button"
             disabled={loading || pin.length === 0}
             onClick={handleDelete}
-            className="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-600 font-extrabold text-sm transition flex items-center justify-center cursor-pointer border border-slate-100"
+            className="h-11 rounded-2xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-600 font-extrabold text-sm transition flex items-center justify-center cursor-pointer border border-slate-100"
           >
             ⌫
           </button>
