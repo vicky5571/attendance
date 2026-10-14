@@ -188,3 +188,19 @@ export interface AuthResponse {
   message?: string;
 }
 
+export type RelocationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface RelocationRequest {
+  id: string;
+  internId: string;
+  currentLocationId: string;
+  targetLocationId: string;
+  reason: string;
+  notes?: string | null;
+  status: RelocationStatus;
+  rejectionReason?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  createdAt: string;
+}
+

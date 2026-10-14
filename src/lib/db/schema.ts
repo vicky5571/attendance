@@ -71,6 +71,20 @@ CREATE TABLE IF NOT EXISTS attendance_requests (
   UNIQUE(intern_id, date)
 );
 
+CREATE TABLE IF NOT EXISTS relocation_requests (
+  id TEXT PRIMARY KEY,
+  intern_id TEXT NOT NULL REFERENCES interns(id) ON DELETE CASCADE,
+  current_location_id TEXT NOT NULL REFERENCES office_locations(id),
+  target_location_id TEXT NOT NULL REFERENCES office_locations(id),
+  reason TEXT NOT NULL,
+  notes TEXT,
+  status TEXT NOT NULL CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+  rejection_reason TEXT,
+  reviewed_by TEXT,
+  reviewed_at TEXT,
+  created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   username TEXT UNIQUE,
