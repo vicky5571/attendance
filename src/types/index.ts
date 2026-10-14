@@ -185,6 +185,7 @@ export interface AuthResponseUser {
   email?: string;
   role: UserRole;
   divisi?: string;
+  photoUrl?: string;
 }
 
 export interface AuthResponse {
