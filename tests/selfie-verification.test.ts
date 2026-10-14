@@ -12,6 +12,7 @@ import {
   getAttendanceRecord,
 } from '../src/lib/db/repo.ts';
 import type { InternProfile, AttendanceRecord } from '../src/types/index.ts';
+import { POST as uploadPhotoRoute } from '../src/app/api/attendance/upload-photo/route.ts';
 
 let db: DatabaseSync;
 
@@ -138,4 +139,72 @@ describe('Selfie Verification & Profile Photo Restoration', () => {
       assert.equal(intern?.photoUrl, '/uploads/selfies/evening-checkout.jpg');
     });
   });
+
+  describe('POST /api/attendance/upload-photo', () => {
+    const VALID_BASE64_IMAGE =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+    beforeEach(() => {
+      createIntern(db, {
+        id: 'intern-upload-test',
+        namaLengkap: 'Upload Tester',
+        divisi: 'IT',
+        namaMentor: 'Mentor',
+        emailMentor: 'mentor@indosat.com',
+        universitas: 'UI',
+        jurusan: 'CS',
+        periodeMagangSelesai: '2026-12-31',
+        status: 'ACTIVE',
+      });
+    });
+
+    it('should accept valid base64 image and return 201 with public photoUrl', async () => {
+      const req = new Request('http://localhost:3000/api/attendance/upload-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internId: 'intern-upload-test',
+          image: VALID_BASE64_IMAGE,
+          type: 'CHECK_IN',
+        }),
+      });
+
+      const res = await uploadPhotoRoute(req);
+      assert.equal(res.status, 201);
+      const data = await res.json();
+      assert.ok(data.photoUrl);
+      assert.match(data.photoUrl, /^\/uploads\/selfies\/intern-upload-test-.*\.png$/);
+      assert.equal(data.mimeType, 'image/png');
+    });
+
+    it('should reject payload missing internId or image with 400', async () => {
+      const req = new Request('http://localhost:3000/api/attendance/upload-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ internId: 'intern-upload-test' }),
+      });
+
+      const res = await uploadPhotoRoute(req);
+      assert.equal(res.status, 400);
+      const data = await res.json();
+      assert.match(data.error, /internId dan image wajib diisi/i);
+    });
+
+    it('should reject unsupported MIME type with 400', async () => {
+      const req = new Request('http://localhost:3000/api/attendance/upload-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internId: 'intern-upload-test',
+          image: 'data:application/pdf;base64,JVBERi0xLjQK...',
+        }),
+      });
+
+      const res = await uploadPhotoRoute(req);
+      assert.equal(res.status, 400);
+      const data = await res.json();
+      assert.match(data.error, /Format gambar tidak didukung/i);
+    });
+  });
 });
+
