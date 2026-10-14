@@ -267,3 +267,4 @@ npm run build
 # 4. Verify test suite
 npm test
 ```
+
