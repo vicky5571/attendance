@@ -16,6 +16,9 @@ import {
   POST as postRelocation,
   GET as getRelocation,
 } from '../src/app/api/interns/relocation/route.ts';
+import {
+  PATCH as patchRelocation,
+} from '../src/app/api/interns/relocation/[id]/route.ts';
 import type { InternProfile, OfficeLocation, RelocationRequest } from '../src/types/index.ts';
 
 let db: DatabaseSync;
@@ -395,6 +398,100 @@ describe('Office Relocation API & Persistence', () => {
       const data = await res.json();
       assert.equal(data.requests.length, 1);
       assert.equal(data.requests[0].internId, 'intern-reloc-test');
+    });
+  });
+
+  describe('PATCH /api/interns/relocation/[id]', () => {
+    beforeEach(() => {
+      createOfficeLocation(db, LOC_HQ);
+      createOfficeLocation(db, LOC_BSD);
+      createIntern(db, INTERN_FIXTURE);
+    });
+
+    it('should approve a pending relocation request with 200', async () => {
+      // Seed a pending request
+      createRelocationRequest(db, {
+        id: 'reloc-patch-01',
+        internId: 'intern-reloc-test',
+        currentLocationId: 'loc-hq',
+        targetLocationId: 'loc-bsd',
+        reason: 'Patch approve test',
+        status: 'PENDING',
+        createdAt: '2026-10-14T10:00:00Z',
+      });
+
+      const req = new Request('http://localhost:3000/api/interns/relocation/reloc-patch-01', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'APPROVED',
+          reviewedBy: 'Administrator IOH',
+        }),
+      });
+
+      const res = await patchRelocation(req, { params: Promise.resolve({ id: 'reloc-patch-01' }) });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.request.status, 'APPROVED');
+      assert.equal(data.request.reviewedBy, 'Administrator IOH');
+      assert.ok(data.request.reviewedAt);
+
+      // Verify intern location was updated
+      const intern = getIntern(db, 'intern-reloc-test');
+      assert.equal(intern?.assignedLocationId, 'loc-bsd');
+    });
+
+    it('should reject a pending relocation request with rejection reason', async () => {
+      createRelocationRequest(db, {
+        id: 'reloc-patch-02',
+        internId: 'intern-reloc-test',
+        currentLocationId: 'loc-hq',
+        targetLocationId: 'loc-bsd',
+        reason: 'Patch reject test',
+        status: 'PENDING',
+        createdAt: '2026-10-14T10:00:00Z',
+      });
+
+      const req = new Request('http://localhost:3000/api/interns/relocation/reloc-patch-02', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'REJECTED',
+          reviewedBy: 'Supervisor IOH',
+          rejectionReason: 'Posisi masih dibutuhkan di kantor asal',
+        }),
+      });
+
+      const res = await patchRelocation(req, { params: Promise.resolve({ id: 'reloc-patch-02' }) });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.request.status, 'REJECTED');
+      assert.equal(data.request.rejectionReason, 'Posisi masih dibutuhkan di kantor asal');
+    });
+
+    it('should return 400 when status is invalid', async () => {
+      const req = new Request('http://localhost:3000/api/interns/relocation/any-id', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'INVALID_STATUS' }),
+      });
+
+      const res = await patchRelocation(req, { params: Promise.resolve({ id: 'any-id' }) });
+      assert.equal(res.status, 400);
+    });
+
+    it('should return 404 when relocation request does not exist', async () => {
+      const req = new Request('http://localhost:3000/api/interns/relocation/non-existent', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'APPROVED',
+          reviewedBy: 'Admin',
+        }),
+      });
+
+      const res = await patchRelocation(req, { params: Promise.resolve({ id: 'non-existent' }) });
+      assert.equal(res.status, 404);
     });
   });
 });
