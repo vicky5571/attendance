@@ -22,6 +22,7 @@ export interface InternProfile {
   email?: string;
   passwordHash?: string;
   assignedLocationId?: string;
+  photoUrl?: string;
 }
 
 export type AttendanceStatus = 'ON_TIME' | 'LATE' | 'EARLY_DEPARTURE' | 'ABSENT';
@@ -64,6 +65,7 @@ export interface AttendanceRecord {
   distanceInMeters?: number;
   locationId?: string;
   photoUrl?: string;
+  checkOutPhotoUrl?: string;
   status: AttendanceStatus;
   remarks?: string;
 }
