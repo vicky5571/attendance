@@ -70,6 +70,18 @@ export function getUserByEmail(db: DatabaseSync, email: string): AppUser | null 
 }
 
 /**
+ * Finds a user by their email address, username, or ID.
+ */
+export function getUserByUsernameOrEmail(db: DatabaseSync, identifier: string): AppUser | null {
+  const clean = identifier.toLowerCase().trim();
+  const row = db.prepare(`
+    SELECT * FROM users 
+    WHERE LOWER(email) = ? OR LOWER(username) = ? OR id = ?
+  `).get(clean, clean, identifier.trim()) as UserRow | undefined;
+  return row ? mapUserRow(row) : null;
+}
+
+/**
  * Finds a user by their user ID.
  */
 export function getUserById(db: DatabaseSync, id: string): AppUser | null {

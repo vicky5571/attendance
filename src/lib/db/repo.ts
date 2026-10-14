@@ -203,6 +203,13 @@ export function getInternByEmail(db: DatabaseSync, email: string): InternProfile
   return row ? mapInternRow(row) : null;
 }
 
+export function getInternByIdOrEmail(db: DatabaseSync, identifier: string): InternProfile | null {
+  const clean = identifier.toLowerCase().trim();
+  const stmt = db.prepare('SELECT * FROM interns WHERE LOWER(email) = ? OR id = ?');
+  const row = stmt.get(clean, identifier.trim()) as unknown as InternRow | undefined;
+  return row ? mapInternRow(row) : null;
+}
+
 export function listInterns(db: DatabaseSync, status?: 'ACTIVE' | 'COMPLETED'): InternProfile[] {
   if (status) {
     const stmt = db.prepare('SELECT * FROM interns WHERE status = ? ORDER BY nama_lengkap ASC');

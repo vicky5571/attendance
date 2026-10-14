@@ -169,7 +169,9 @@ export interface AdminLoginPayload {
 }
 
 export interface UnifiedLoginPayload {
-  email: string;
+  email?: string;
+  username?: string;
+  identifier?: string;
   password: string;
 }
 

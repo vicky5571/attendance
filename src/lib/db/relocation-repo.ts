@@ -131,3 +131,4 @@ export function reviewRelocationRequest(
 
   return getRelocationRequestById(db, id);
 }
+

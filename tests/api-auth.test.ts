@@ -147,7 +147,64 @@ describe('Auth REST APIs (/api/auth)', () => {
       const res = await loginRoute(req);
       assert.equal(res.status, 401);
       const data = await res.json();
-      assert.match(data.error, /Email atau password/i);
+      assert.match(data.error, /Email/i);
+    });
+
+    it('should authenticate admin with username instead of email', async () => {
+      const req = new Request('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: 'admin', password: 'AdminIOH2026!' }),
+      });
+      const res = await loginRoute(req);
+      assert.equal(res.status, 200);
+
+      const data = await res.json();
+      assert.equal(data.user.role, 'ADMIN');
+      assert.equal(data.user.email, 'admin@ioh.co.id');
+      assert.ok(res.headers.get('set-cookie')?.includes('ioh_session='));
+    });
+
+    it('should authenticate admin when username is provided in email field', async () => {
+      const req = new Request('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'admin', password: 'AdminIOH2026!' }),
+      });
+      const res = await loginRoute(req);
+      assert.equal(res.status, 200);
+
+      const data = await res.json();
+      assert.equal(data.user.role, 'ADMIN');
+      assert.equal(data.user.email, 'admin@ioh.co.id');
+    });
+
+    it('should authenticate intern with ID/username in identifier field', async () => {
+      const req = new Request('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: 'intern-sarah', password: 'InternIOH2026!' }),
+      });
+      const res = await loginRoute(req);
+      assert.equal(res.status, 200);
+
+      const data = await res.json();
+      assert.equal(data.user.role, 'INTERN');
+      assert.equal(data.user.id, 'intern-sarah');
+    });
+
+    it('should authenticate intern when ID is provided in email field', async () => {
+      const req = new Request('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'intern-zacky', password: 'InternIOH2026!' }),
+      });
+      const res = await loginRoute(req);
+      assert.equal(res.status, 200);
+
+      const data = await res.json();
+      assert.equal(data.user.role, 'INTERN');
+      assert.equal(data.user.id, 'intern-zacky');
     });
   });
 

@@ -1,7 +1,7 @@
 import { randomUUID, randomBytes } from 'node:crypto';
 import { getDatabase } from '../../../../lib/db/client.ts';
-import { getIntern, getInternByEmail } from '../../../../lib/db/repo.ts';
-import { getUserByEmail, createSession } from '../../../../lib/db/auth-repo.ts';
+import { getIntern, getInternByEmail, getInternByIdOrEmail } from '../../../../lib/db/repo.ts';
+import { getUserByEmail, getUserByUsernameOrEmail, createSession } from '../../../../lib/db/auth-repo.ts';
 import { verifyPin, verifyPassword } from '../../../../lib/auth.ts';
 
 function generateSessionToken(): string {
@@ -25,13 +25,14 @@ export async function POST(req: Request) {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + SESSION_TTL_SECONDS * 1000).toISOString();
 
-    // 1. Unified Email + Password Mode (Supports Interns, Admins, and Supervisors)
-    if (body.email && body.password) {
-      const email = body.email.trim();
+    const identifier = (body.identifier || body.email || body.username)?.trim();
+
+    // 1. Unified Username / Email + Password Mode (Supports Interns, Admins, and Supervisors)
+    if (identifier && body.password) {
       const password = body.password;
 
       // Check Administrative Users first
-      const adminUser = getUserByEmail(db, email);
+      const adminUser = getUserByUsernameOrEmail(db, identifier);
       if (adminUser) {
         if (!adminUser.passwordHash || !verifyPassword(password, adminUser.passwordHash)) {
           return Response.json(
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
       }
 
       // Check Interns next
-      const intern = getInternByEmail(db, email);
+      const intern = getInternByIdOrEmail(db, identifier);
       if (intern) {
         if (!intern.passwordHash || !verifyPassword(password, intern.passwordHash)) {
           return Response.json(
@@ -117,7 +118,7 @@ export async function POST(req: Request) {
 
     if (!body.role) {
       return Response.json(
-        { error: 'Field "role" atau kredensial "email" & "password" wajib diisi' },
+        { error: 'Field "role" atau kredensial username/email & password wajib diisi' },
         { status: 400 }
       );
     }
@@ -182,15 +183,16 @@ export async function POST(req: Request) {
 
     // 2. Administrator / Supervisor Login Mode (Email + Password)
     if (body.role === 'ADMIN' || body.role === 'SUPERVISOR') {
-      const { email, password } = body;
-      if (!email || !password) {
+      const identifier = (body.identifier || body.email || body.username)?.trim();
+      const password = body.password;
+      if (!identifier || !password) {
         return Response.json(
-          { error: 'Field email dan password wajib diisi untuk login administrator' },
+          { error: 'Field email/username dan password wajib diisi untuk login administrator' },
           { status: 400 }
         );
       }
 
-      const user = getUserByEmail(db, email);
+      const user = getUserByUsernameOrEmail(db, identifier);
       if (!user) {
         return Response.json(
           { error: 'Email atau password yang dimasukkan salah' },
