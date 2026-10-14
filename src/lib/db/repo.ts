@@ -33,6 +33,7 @@ interface InternRow {
   email?: string | null;
   password_hash?: string | null;
   assigned_location_id?: string | null;
+  photo_url?: string | null;
 }
 
 interface AttendanceRow {
@@ -50,6 +51,7 @@ interface AttendanceRow {
   remarks: string | null;
   location_id: string | null;
   photo_url: string | null;
+  check_out_photo_url: string | null;
 }
 
 function mapOfficeConfigRow(row: OfficeConfigRow): OfficeConfig {
@@ -86,6 +88,7 @@ function mapInternRow(row: InternRow): InternProfile {
   if (row.email) profile.email = row.email;
   if (row.password_hash) profile.passwordHash = row.password_hash;
   if (row.assigned_location_id) profile.assignedLocationId = row.assigned_location_id;
+  if (row.photo_url) profile.photoUrl = row.photo_url;
   return profile;
 }
 
@@ -108,6 +111,7 @@ function mapAttendanceRow(row: AttendanceRow): AttendanceRecord {
   if (row.remarks) record.remarks = row.remarks;
   if (row.location_id) record.locationId = row.location_id;
   if (row.photo_url) record.photoUrl = row.photo_url;
+  if (row.check_out_photo_url) record.checkOutPhotoUrl = row.check_out_photo_url;
 
   return record;
 }
@@ -160,8 +164,8 @@ export function createIntern(db: DatabaseSync, intern: InternProfile): void {
     INSERT INTO interns (
       id, nama_lengkap, divisi, nama_mentor, email_mentor,
       universitas, jurusan, periode_magang_selesai, status, pin_hash,
-      email, password_hash, assigned_location_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      email, password_hash, assigned_location_id, photo_url
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   stmt.run(
     intern.id,
@@ -176,8 +180,20 @@ export function createIntern(db: DatabaseSync, intern: InternProfile): void {
     intern.pinHash || null,
     intern.email ? intern.email.toLowerCase().trim() : null,
     intern.passwordHash || null,
-    intern.assignedLocationId || null
+    intern.assignedLocationId || null,
+    intern.photoUrl || null
   );
+}
+
+export function updateInternPhoto(
+  db: DatabaseSync,
+  internId: string,
+  photoUrl: string
+): void {
+  const stmt = db.prepare(`
+    UPDATE interns SET photo_url = ? WHERE id = ?
+  `);
+  stmt.run(photoUrl, internId);
 }
 
 export function updateInternLocation(
@@ -198,8 +214,9 @@ export function getIntern(db: DatabaseSync, id: string): InternProfile | null {
 }
 
 export function getInternByEmail(db: DatabaseSync, email: string): InternProfile | null {
+  const clean = email.toLowerCase().trim();
   const stmt = db.prepare('SELECT * FROM interns WHERE LOWER(email) = ?');
-  const row = stmt.get(email.toLowerCase().trim()) as unknown as InternRow | undefined;
+  const row = stmt.get(clean) as unknown as InternRow | undefined;
   return row ? mapInternRow(row) : null;
 }
 
@@ -230,8 +247,9 @@ export function recordCheckIn(db: DatabaseSync, record: AttendanceRecord): void 
     INSERT INTO attendance_logs (
       id, intern_id, date, check_in_time, check_out_time,
       check_in_lat, check_in_lng, check_out_lat, check_out_lng,
-      distance_in_meters, status, remarks, location_id, photo_url
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      distance_in_meters, status, remarks, location_id, photo_url,
+      check_out_photo_url
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   stmt.run(
     record.id,
@@ -247,8 +265,13 @@ export function recordCheckIn(db: DatabaseSync, record: AttendanceRecord): void 
     record.status,
     record.remarks || null,
     record.locationId || null,
-    record.photoUrl || null
+    record.photoUrl || null,
+    record.checkOutPhotoUrl || null
   );
+
+  if (record.photoUrl) {
+    updateInternPhoto(db, record.internId, record.photoUrl);
+  }
 }
 
 export function recordCheckOut(
@@ -259,6 +282,7 @@ export function recordCheckOut(
     checkOutTime: string;
     checkOutCoords?: Coordinates;
     remarks?: string;
+    checkOutPhotoUrl?: string;
   }
 ): AttendanceRecord {
   const existing = getAttendanceRecord(db, internId, date);
@@ -271,7 +295,8 @@ export function recordCheckOut(
     SET check_out_time = ?,
         check_out_lat = ?,
         check_out_lng = ?,
-        remarks = ?
+        remarks = ?,
+        check_out_photo_url = COALESCE(?, check_out_photo_url)
     WHERE intern_id = ? AND date = ?
   `);
 
@@ -280,9 +305,14 @@ export function recordCheckOut(
     data.checkOutCoords?.latitude ?? null,
     data.checkOutCoords?.longitude ?? null,
     data.remarks ?? existing.remarks ?? null,
+    data.checkOutPhotoUrl || null,
     internId,
     date
   );
+
+  if (data.checkOutPhotoUrl) {
+    updateInternPhoto(db, internId, data.checkOutPhotoUrl);
+  }
 
   return getAttendanceRecord(db, internId, date)!;
 }
