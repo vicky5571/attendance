@@ -12,6 +12,10 @@ import {
 } from '../src/lib/db/relocation-repo.ts';
 import { createIntern, getIntern } from '../src/lib/db/repo.ts';
 import { createOfficeLocation } from '../src/lib/db/locations-repo.ts';
+import {
+  POST as postRelocation,
+  GET as getRelocation,
+} from '../src/app/api/interns/relocation/route.ts';
 import type { InternProfile, OfficeLocation, RelocationRequest } from '../src/types/index.ts';
 
 let db: DatabaseSync;
@@ -222,6 +226,175 @@ describe('Office Relocation API & Persistence', () => {
     it('should return null when reviewing non-existent request', () => {
       const result = reviewRelocationRequest(db, 'non-existent', 'APPROVED', 'Admin');
       assert.equal(result, null);
+    });
+  });
+
+  describe('POST /api/interns/relocation', () => {
+    beforeEach(() => {
+      createOfficeLocation(db, LOC_HQ);
+      createOfficeLocation(db, LOC_BSD);
+      createIntern(db, INTERN_FIXTURE);
+    });
+
+    it('should submit a valid relocation request with 201', async () => {
+      const req = new Request('http://localhost:3000/api/interns/relocation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internId: 'intern-reloc-test',
+          currentLocationId: 'loc-hq',
+          targetLocationId: 'loc-bsd',
+          reason: 'Moving closer to new residence',
+        }),
+      });
+
+      const res = await postRelocation(req);
+      assert.equal(res.status, 201);
+      const data = await res.json();
+      assert.ok(data.request);
+      assert.equal(data.request.status, 'PENDING');
+      assert.equal(data.request.internId, 'intern-reloc-test');
+      assert.equal(data.request.targetLocationId, 'loc-bsd');
+    });
+
+    it('should reject with 400 when required fields are missing', async () => {
+      const req = new Request('http://localhost:3000/api/interns/relocation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ internId: 'intern-reloc-test' }),
+      });
+
+      const res = await postRelocation(req);
+      assert.equal(res.status, 400);
+    });
+
+    it('should reject with 400 when target equals current location', async () => {
+      const req = new Request('http://localhost:3000/api/interns/relocation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internId: 'intern-reloc-test',
+          currentLocationId: 'loc-hq',
+          targetLocationId: 'loc-hq',
+          reason: 'Same location test',
+        }),
+      });
+
+      const res = await postRelocation(req);
+      assert.equal(res.status, 400);
+      const data = await res.json();
+      assert.match(data.error, /tidak boleh sama/i);
+    });
+
+    it('should reject with 404 when intern does not exist', async () => {
+      const req = new Request('http://localhost:3000/api/interns/relocation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internId: 'non-existent-intern',
+          currentLocationId: 'loc-hq',
+          targetLocationId: 'loc-bsd',
+          reason: 'Test',
+        }),
+      });
+
+      const res = await postRelocation(req);
+      assert.equal(res.status, 404);
+    });
+
+    it('should reject with 404 when target location does not exist', async () => {
+      const req = new Request('http://localhost:3000/api/interns/relocation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internId: 'intern-reloc-test',
+          currentLocationId: 'loc-hq',
+          targetLocationId: 'loc-nonexistent',
+          reason: 'Test',
+        }),
+      });
+
+      const res = await postRelocation(req);
+      assert.equal(res.status, 404);
+    });
+
+    it('should reject with 409 when intern already has a pending relocation', async () => {
+      // First request succeeds
+      const req1 = new Request('http://localhost:3000/api/interns/relocation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internId: 'intern-reloc-test',
+          currentLocationId: 'loc-hq',
+          targetLocationId: 'loc-bsd',
+          reason: 'First request',
+        }),
+      });
+      const res1 = await postRelocation(req1);
+      assert.equal(res1.status, 201);
+
+      // Duplicate request fails
+      const req2 = new Request('http://localhost:3000/api/interns/relocation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internId: 'intern-reloc-test',
+          currentLocationId: 'loc-hq',
+          targetLocationId: 'loc-bsd',
+          reason: 'Second request while pending',
+        }),
+      });
+      const res2 = await postRelocation(req2);
+      assert.equal(res2.status, 409);
+    });
+  });
+
+  describe('GET /api/interns/relocation', () => {
+    beforeEach(() => {
+      createOfficeLocation(db, LOC_HQ);
+      createOfficeLocation(db, LOC_BSD);
+      createIntern(db, INTERN_FIXTURE);
+    });
+
+    it('should return all relocation requests', async () => {
+      // Seed a request first
+      createRelocationRequest(db, {
+        id: 'reloc-get-01',
+        internId: 'intern-reloc-test',
+        currentLocationId: 'loc-hq',
+        targetLocationId: 'loc-bsd',
+        reason: 'GET test',
+        status: 'PENDING',
+        createdAt: '2026-10-14T10:00:00Z',
+      });
+
+      const req = new Request('http://localhost:3000/api/interns/relocation');
+      const res = await getRelocation(req);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.ok(Array.isArray(data.requests));
+      assert.ok(data.requests.length >= 1);
+    });
+
+    it('should filter by internId and status query params', async () => {
+      createRelocationRequest(db, {
+        id: 'reloc-filter-01',
+        internId: 'intern-reloc-test',
+        currentLocationId: 'loc-hq',
+        targetLocationId: 'loc-bsd',
+        reason: 'Filter test',
+        status: 'PENDING',
+        createdAt: '2026-10-14T10:00:00Z',
+      });
+
+      const req = new Request(
+        'http://localhost:3000/api/interns/relocation?internId=intern-reloc-test&status=PENDING'
+      );
+      const res = await getRelocation(req);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.requests.length, 1);
+      assert.equal(data.requests[0].internId, 'intern-reloc-test');
     });
   });
 });
