@@ -53,6 +53,7 @@ next-env.d.ts
 
 # uploaded user assets
 public/uploads/*
+public/uploads/selfies/*
 !public/uploads/selfies/
 !public/uploads/selfies/.gitkeep
 
