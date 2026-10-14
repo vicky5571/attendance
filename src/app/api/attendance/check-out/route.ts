@@ -15,6 +15,8 @@ interface CheckOutPayload {
   longitude?: number;
   timestamp?: string;
   pin?: string;
+  photoUrl?: string;
+  checkOutPhotoUrl?: string;
 }
 
 export async function POST(request: Request) {
@@ -93,6 +95,7 @@ export async function POST(request: Request) {
       checkOutTime: timeStr,
       checkOutCoords: coords,
       remarks: combinedRemarks,
+      checkOutPhotoUrl: body.checkOutPhotoUrl || body.photoUrl,
     });
 
     return Response.json(updated, { status: 200 });

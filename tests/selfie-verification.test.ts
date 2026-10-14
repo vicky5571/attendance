@@ -10,9 +10,14 @@ import {
   recordCheckIn,
   recordCheckOut,
   getAttendanceRecord,
+  setOfficeConfig,
 } from '../src/lib/db/repo.ts';
+import { createSession } from '../src/lib/db/auth-repo.ts';
 import type { InternProfile, AttendanceRecord } from '../src/types/index.ts';
 import { POST as uploadPhotoRoute } from '../src/app/api/attendance/upload-photo/route.ts';
+import { POST as checkInRoute } from '../src/app/api/attendance/check-in/route.ts';
+import { POST as checkOutRoute } from '../src/app/api/attendance/check-out/route.ts';
+import { GET as meRoute } from '../src/app/api/auth/me/route.ts';
 
 let db: DatabaseSync;
 
@@ -206,5 +211,112 @@ describe('Selfie Verification & Profile Photo Restoration', () => {
       assert.match(data.error, /Format gambar tidak didukung/i);
     });
   });
+
+  describe('Full Flow: Check-In & Check-Out Selfie Auto-Restoring to Profile', () => {
+    beforeEach(() => {
+      setOfficeConfig(db, {
+        targetLatitude: -6.180495,
+        targetLongitude: 106.822769,
+        maxRadiusMeters: 100,
+        workStartTime: '08:30',
+        workEndTime: '17:30',
+        emailAtasan: 'supervisor@indosat.com',
+      });
+
+      createIntern(db, {
+        id: 'intern-flow-test',
+        namaLengkap: 'Flow Test Intern',
+        divisi: 'Network Operations',
+        namaMentor: 'Mentor',
+        emailMentor: 'mentor@indosat.com',
+        universitas: 'UI',
+        jurusan: 'EE',
+        periodeMagangSelesai: '2026-12-31',
+        status: 'ACTIVE',
+      });
+    });
+
+    it('should record check-in selfie and auto-restore it to intern profile', async () => {
+      const checkInReq = new Request('http://localhost:3000/api/attendance/check-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internId: 'intern-flow-test',
+          latitude: -6.180495,
+          longitude: 106.822769,
+          photoUrl: '/uploads/selfies/checkin-morning.jpg',
+        }),
+      });
+
+      const checkInRes = await checkInRoute(checkInReq);
+      assert.equal(checkInRes.status, 201);
+      const data = await checkInRes.json();
+      assert.equal(data.photoUrl, '/uploads/selfies/checkin-morning.jpg');
+
+      // Verify intern profile has been updated
+      const intern = getIntern(db, 'intern-flow-test');
+      assert.equal(intern?.photoUrl, '/uploads/selfies/checkin-morning.jpg');
+    });
+
+    it('should record check-out selfie and auto-restore latest photo to intern profile', async () => {
+      // 1. Check in first
+      await checkInRoute(
+        new Request('http://localhost:3000/api/attendance/check-in', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            internId: 'intern-flow-test',
+            latitude: -6.180495,
+            longitude: 106.822769,
+            photoUrl: '/uploads/selfies/checkin-morning.jpg',
+          }),
+        })
+      );
+
+      // 2. Check out with new selfie
+      const checkOutReq = new Request('http://localhost:3000/api/attendance/check-out', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internId: 'intern-flow-test',
+          latitude: -6.180495,
+          longitude: 106.822769,
+          photoUrl: '/uploads/selfies/checkout-evening.jpg',
+        }),
+      });
+
+      const checkOutRes = await checkOutRoute(checkOutReq);
+      assert.equal(checkOutRes.status, 200);
+      const data = await checkOutRes.json();
+      assert.equal(data.checkOutPhotoUrl, '/uploads/selfies/checkout-evening.jpg');
+
+      // Verify intern profile now displays the latest check-out selfie
+      const intern = getIntern(db, 'intern-flow-test');
+      assert.equal(intern?.photoUrl, '/uploads/selfies/checkout-evening.jpg');
+    });
+
+    it('should hydrate photoUrl in GET /api/auth/me session', async () => {
+      updateInternPhoto(db, 'intern-flow-test', '/uploads/selfies/profile-hydrated.jpg');
+
+      createSession(db, {
+        id: 'sess-photo-test',
+        userId: 'intern-flow-test',
+        role: 'INTERN',
+        token: 'token-photo-test-123',
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
+        createdAt: new Date().toISOString(),
+      });
+
+      const meReq = new Request('http://localhost:3000/api/auth/me', {
+        headers: { cookie: 'ioh_session=token-photo-test-123' },
+      });
+
+      const meRes = await meRoute(meReq);
+      assert.equal(meRes.status, 200);
+      const data = await meRes.json();
+      assert.equal(data.user.photoUrl, '/uploads/selfies/profile-hydrated.jpg');
+    });
+  });
 });
+
 

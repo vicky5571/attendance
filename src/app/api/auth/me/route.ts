@@ -56,6 +56,8 @@ export async function GET(req: Request) {
           name: intern.namaLengkap,
           role: 'INTERN',
           divisi: intern.divisi,
+          email: intern.email,
+          photoUrl: intern.photoUrl,
           emailMentor: intern.emailMentor,
           namaMentor: intern.namaMentor,
         },
