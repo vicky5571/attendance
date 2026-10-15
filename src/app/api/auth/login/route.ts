@@ -101,6 +101,7 @@ export async function POST(req: Request) {
               email: intern.email,
               role: 'INTERN' as UserRole,
               divisi: intern.divisi,
+              photoUrl: intern.photoUrl,
             },
           },
           {
@@ -170,6 +171,7 @@ export async function POST(req: Request) {
             name: intern.namaLengkap,
             role: 'INTERN' as UserRole,
             divisi: intern.divisi,
+            photoUrl: intern.photoUrl,
           },
         },
         {

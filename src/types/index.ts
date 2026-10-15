@@ -209,3 +209,23 @@ export interface RelocationRequest {
   createdAt: string;
 }
 
+export interface InternRegistrationPayload {
+  namaLengkap: string;
+  email: string;
+  password: string;
+  pin: string;
+  divisi: string;
+  namaMentor: string;
+  emailMentor: string;
+  universitas: string;
+  jurusan: string;
+  periodeMagangSelesai: string;
+  assignedLocationId?: string;
+  facePhoto: string;
+}
+
+export interface RegistrationResponse {
+  message: string;
+  intern: InternProfile;
+}
+
