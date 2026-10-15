@@ -63,9 +63,8 @@ export function UnifiedLoginForm({ onSuccess }: UnifiedLoginFormProps) {
 
       {/* Identifier (Username / ID / Email) Input */}
       <div className="flex flex-col gap-1.5 text-left">
-        <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center justify-between">
-          <span>Username, ID Magang, atau Email</span>
-          <span className="text-[10px] font-semibold text-pink-600">Wajib</span>
+        <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+          Username, ID Magang, atau Email
         </label>
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#ED0278] transition-colors">
@@ -91,9 +90,8 @@ export function UnifiedLoginForm({ onSuccess }: UnifiedLoginFormProps) {
 
       {/* Password Input */}
       <div className="flex flex-col gap-1.5 text-left">
-        <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center justify-between">
-          <span>Password</span>
-          <span className="text-[10px] font-semibold text-slate-400">Tersandi</span>
+        <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+          Password
         </label>
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#ED0278] transition-colors">
