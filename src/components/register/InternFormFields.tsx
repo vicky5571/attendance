@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { OfficeLocation } from '@/types';
 
 export interface InternFormFieldsProps {
@@ -30,6 +30,32 @@ export function InternFormFields({
   onTogglePassword,
   onInputChange,
 }: InternFormFieldsProps) {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
+  const selectedLocation =
+    locations.find((l) => l.id === formData.assignedLocationId) || locations[0];
+
+  const handleSelectLocation = (locId: string) => {
+    onInputChange({
+      target: { name: 'assignedLocationId', value: locId },
+    } as any);
+    setIsDropdownOpen(false);
+  };
   return (
     <>
       {/* Section 1: Akun & Kredensial */}
@@ -187,22 +213,110 @@ export function InternFormFields({
             />
           </div>
 
-          <div className="flex flex-col gap-1 text-left">
-            <label className="text-[11px] font-bold text-slate-600">
-              Hub / Kantor Penempatan <span className="text-pink-600">*</span>
+          <div className="flex flex-col gap-1 text-left relative" ref={dropdownRef}>
+            <label className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
+              <span>
+                Hub / Kantor Penempatan <span className="text-pink-600">*</span>
+              </span>
+              {selectedLocation && (
+                <span className="text-[10px] text-slate-400 font-semibold">
+                  Radius {selectedLocation.maxRadiusMeters}m
+                </span>
+              )}
             </label>
-            <select
-              name="assignedLocationId"
-              value={formData.assignedLocationId}
-              onChange={onInputChange}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 text-xs font-semibold focus:outline-none focus:border-[#ED0278] focus:ring-2 focus:ring-pink-500/10 transition-all shadow-xs"
+
+            {/* Custom Dropdown Trigger */}
+            <button
+              type="button"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className={`w-full px-3.5 py-2 rounded-xl border bg-white text-slate-900 text-xs font-semibold flex items-center justify-between transition-all shadow-xs cursor-pointer ${
+                isDropdownOpen
+                  ? 'border-[#ED0278] ring-2 ring-pink-500/10'
+                  : 'border-slate-200 hover:border-slate-300'
+              }`}
             >
-              {locations.map((loc) => (
-                <option key={loc.id} value={loc.id}>
-                  {loc.name}
-                </option>
-              ))}
-            </select>
+              <div className="flex items-center gap-2 min-w-0 pr-2">
+                <div className="w-5 h-5 rounded-lg bg-pink-50 text-[#ED0278] flex items-center justify-center shrink-0">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                    />
+                  </svg>
+                </div>
+                <div className="flex flex-col text-left truncate">
+                  <span className="truncate font-bold text-slate-900 text-xs">
+                    {selectedLocation ? selectedLocation.name : 'Pilih Lokasi Kantor'}
+                  </span>
+                  {selectedLocation?.address && (
+                    <span className="truncate text-[10px] text-slate-400 font-normal">
+                      {selectedLocation.address}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <svg
+                className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
+                  isDropdownOpen ? 'rotate-180 text-[#ED0278]' : ''
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Custom Dropdown Options Menu */}
+            {isDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1.5 z-40 bg-white rounded-2xl shadow-xl border border-slate-200 p-1.5 max-h-60 overflow-y-auto flex flex-col gap-1">
+                {locations.length === 0 ? (
+                  <div className="py-4 text-center text-xs text-slate-400 font-medium">
+                    Tidak ada lokasi kantor tersedia.
+                  </div>
+                ) : (
+                  locations.map((loc) => {
+                    const isSelected = loc.id === formData.assignedLocationId;
+                    return (
+                      <div
+                        key={loc.id}
+                        onClick={() => handleSelectLocation(loc.id)}
+                        className={`p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                          isSelected
+                            ? 'bg-pink-50/60 border border-pink-200/80 text-slate-900'
+                            : 'hover:bg-slate-50 border border-transparent text-slate-700'
+                        }`}
+                      >
+                        <div className="flex flex-col min-w-0 pr-1 text-left">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-extrabold text-xs text-slate-900 truncate">
+                              {loc.name}
+                            </span>
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 shrink-0">
+                              Radius {loc.maxRadiusMeters}m
+                            </span>
+                          </div>
+                          {loc.address && (
+                            <span className="text-[10px] text-slate-500 font-normal truncate mt-0.5">
+                              {loc.address}
+                            </span>
+                          )}
+                        </div>
+                        {isSelected && (
+                          <div className="w-4 h-4 rounded-full bg-[#ED0278] text-white flex items-center justify-center shrink-0">
+                            <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </div>
         </div>
 
