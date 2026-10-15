@@ -188,42 +188,42 @@ export function AttendanceHistoryView({
       case 'HADIR':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <span>🟢</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
             <span>{label}</span>
           </span>
         );
       case 'TERLAMBAT':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-50 text-amber-700 border border-amber-200">
-            <span>🟡</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
             <span>{label}</span>
           </span>
         );
       case 'IZIN':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-blue-50 text-blue-700 border border-blue-200">
-            <span>🔵</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
             <span>{label}</span>
           </span>
         );
       case 'SAKIT':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-purple-50 text-purple-700 border border-purple-200">
-            <span>🟣</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
             <span>{label}</span>
           </span>
         );
       case 'ALPHA':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-rose-50 text-rose-700 border border-rose-200">
-            <span>🔴</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
             <span>Alpha</span>
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-            <span>⚪</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
             <span>Belum Presensi</span>
           </span>
         );
@@ -259,8 +259,8 @@ export function AttendanceHistoryView({
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-2.5">
         {/* Total Hadir */}
         <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-100 flex flex-col items-center text-center shadow-2xs">
-          <span className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
-            <span>🟢</span> Total Hadir
+          <span className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider">
+            Total Hadir
           </span>
           <span className="text-xl font-black text-emerald-700 font-mono mt-1">
             {countTotalHadir}
@@ -272,8 +272,8 @@ export function AttendanceHistoryView({
 
         {/* Terlambat */}
         <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-100 flex flex-col items-center text-center shadow-2xs">
-          <span className="text-[10px] font-extrabold text-amber-800 uppercase tracking-wider flex items-center gap-1">
-            <span>🟡</span> Terlambat
+          <span className="text-[10px] font-extrabold text-amber-800 uppercase tracking-wider">
+            Terlambat
           </span>
           <span className="text-xl font-black text-amber-700 font-mono mt-1">
             {countTerlambat}
@@ -285,8 +285,8 @@ export function AttendanceHistoryView({
 
         {/* Izin */}
         <div className="p-3.5 rounded-2xl bg-blue-50/70 border border-blue-100 flex flex-col items-center text-center shadow-2xs">
-          <span className="text-[10px] font-extrabold text-blue-800 uppercase tracking-wider flex items-center gap-1">
-            <span>🔵</span> Izin
+          <span className="text-[10px] font-extrabold text-blue-800 uppercase tracking-wider">
+            Izin
           </span>
           <span className="text-xl font-black text-blue-700 font-mono mt-1">
             {countIzin}
@@ -298,8 +298,8 @@ export function AttendanceHistoryView({
 
         {/* Sakit */}
         <div className="p-3.5 rounded-2xl bg-purple-50/70 border border-purple-100 flex flex-col items-center text-center shadow-2xs">
-          <span className="text-[10px] font-extrabold text-purple-800 uppercase tracking-wider flex items-center gap-1">
-            <span>🟣</span> Sakit
+          <span className="text-[10px] font-extrabold text-purple-800 uppercase tracking-wider">
+            Sakit
           </span>
           <span className="text-xl font-black text-purple-700 font-mono mt-1">
             {countSakit}
@@ -311,8 +311,8 @@ export function AttendanceHistoryView({
 
         {/* Alpha */}
         <div className="col-span-2 sm:col-span-1 p-3.5 rounded-2xl bg-rose-50/70 border border-rose-100 flex flex-col items-center text-center shadow-2xs">
-          <span className="text-[10px] font-extrabold text-rose-800 uppercase tracking-wider flex items-center gap-1">
-            <span>🔴</span> Alpha
+          <span className="text-[10px] font-extrabold text-rose-800 uppercase tracking-wider">
+            Alpha
           </span>
           <span className="text-xl font-black text-rose-700 font-mono mt-1">
             {countAlpha}
@@ -346,11 +346,11 @@ export function AttendanceHistoryView({
             className="px-3 py-2 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-[#ED0278] transition cursor-pointer"
           >
             <option value="ALL">Semua Status</option>
-            <option value="HADIR">🟢 Hadir</option>
-            <option value="TERLAMBAT">🟡 Terlambat</option>
-            <option value="IZIN">🔵 Izin / WFH</option>
-            <option value="SAKIT">🟣 Sakit</option>
-            <option value="ALPHA">🔴 Alpha</option>
+            <option value="HADIR">Hadir</option>
+            <option value="TERLAMBAT">Terlambat</option>
+            <option value="IZIN">Izin / WFH</option>
+            <option value="SAKIT">Sakit</option>
+            <option value="ALPHA">Alpha</option>
           </select>
         </div>
 
@@ -364,15 +364,41 @@ export function AttendanceHistoryView({
               placeholder="Cari catatan/tanggal..."
               className="w-full pl-8 pr-3 py-2 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#ED0278] transition"
             />
-            <span className="absolute left-2.5 top-2.5 text-xs text-slate-400">🔍</span>
+            <svg
+              className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
           </div>
 
           <a
             href={`/api/reports/monthly-export?internId=${encodeURIComponent(internId)}&month=${encodeURIComponent(selectedMonth)}`}
             download
-            className="px-3.5 py-2 rounded-2xl bg-slate-100 hover:bg-[#ED0278] text-slate-700 hover:text-white border border-slate-200 text-xs font-extrabold transition shadow-2xs whitespace-nowrap cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-slate-100 hover:bg-[#ED0278] text-slate-700 hover:text-white border border-slate-200 text-xs font-extrabold transition shadow-2xs whitespace-nowrap cursor-pointer group"
+            title="Download CSV"
           >
-            📥 CSV
+            <svg
+              className="w-3.5 h-3.5 text-slate-500 group-hover:text-white transition shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            <span>CSV</span>
           </a>
         </div>
       </div>
@@ -385,8 +411,12 @@ export function AttendanceHistoryView({
             <span>Memuat catatan presensi...</span>
           </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="py-12 text-center text-xs font-bold text-slate-400 bg-slate-50 rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-1.5">
-            <span className="text-xl">📅</span>
+          <div className="py-12 text-center text-xs font-bold text-slate-400 bg-slate-50 rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-2">
+            <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-center text-slate-400">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
             <span>Belum ada catatan presensi pada periode dan filter ini.</span>
           </div>
         ) : (
