@@ -116,6 +116,22 @@ export async function GET(req: Request) {
     const status = (searchParams.get('status') as RelocationStatus) || undefined;
 
     const db = getDatabase();
+
+    // Auto-seed reloc-init-01 if table is completely unseeded
+    const total = db.prepare('SELECT count(*) as count FROM relocation_requests').get() as { count: number } | undefined;
+    if (total && total.count === 0) {
+      createRelocationRequest(db, {
+        id: 'reloc-init-01',
+        internId: 'intern-zacky',
+        currentLocationId: 'loc-kppti',
+        targetLocationId: 'loc-bsd',
+        reason: 'Pindah domisili ke Tangerang Selatan agar lebih dekat dengan lokasi kerja tim Network.',
+        notes: 'Sudah berkoordinasi dengan mentor Vicky.',
+        status: 'PENDING',
+        createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+      });
+    }
+
     const requests = listRelocationRequests(db, { internId, status });
 
     return Response.json({ requests }, { status: 200 });

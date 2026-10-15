@@ -469,6 +469,24 @@ describe('Office Relocation API & Persistence', () => {
       assert.equal(data.request.rejectionReason, 'Posisi masih dibutuhkan di kantor asal');
     });
 
+    it('should approve initial mock request reloc-init-01 with auto-healing and update intern office', async () => {
+      // reloc-init-01 was not manually created in this test, but should auto-heal and approve
+      const req = new Request('http://localhost:3000/api/interns/relocation/reloc-init-01', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'APPROVED',
+          reviewedBy: 'Admin IOH',
+        }),
+      });
+
+      const res = await patchRelocation(req, { params: Promise.resolve({ id: 'reloc-init-01' }) });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.request.status, 'APPROVED');
+      assert.equal(data.request.id, 'reloc-init-01');
+    });
+
     it('should return 400 when status is invalid', async () => {
       const req = new Request('http://localhost:3000/api/interns/relocation/any-id', {
         method: 'PATCH',

@@ -2,8 +2,9 @@ import type { DatabaseSync } from 'node:sqlite';
 import { getDatabase } from './client.ts';
 import { initSchema } from './schema.ts';
 import { setOfficeConfig, createIntern, getIntern } from './repo.ts';
+import { createRelocationRequest } from './relocation-repo.ts';
 import { hashPassword } from '../auth.ts';
-import type { OfficeConfig, InternProfile, OfficeLocation } from '../../types/index.ts';
+import type { OfficeConfig, InternProfile, OfficeLocation, RelocationRequest } from '../../types/index.ts';
 
 export const DEFAULT_OFFICE_CONFIG: OfficeConfig = {
   targetLatitude: Number(process.env.TARGET_LATITUDE) || -6.180495,
@@ -68,6 +69,19 @@ export const INITIAL_INTERNS: InternProfile[] = [
   },
 ];
 
+export const INITIAL_RELOCATION_REQUESTS: RelocationRequest[] = [
+  {
+    id: 'reloc-init-01',
+    internId: 'intern-zacky',
+    currentLocationId: 'loc-kppti',
+    targetLocationId: 'loc-bsd',
+    reason: 'Pindah domisili ke Tangerang Selatan agar lebih dekat dengan lokasi kerja tim Network.',
+    notes: 'Sudah berkoordinasi dengan mentor Vicky.',
+    status: 'PENDING',
+    createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+  },
+];
+
 export function seedDatabase(db: DatabaseSync): void {
   initSchema(db);
   setOfficeConfig(db, DEFAULT_OFFICE_CONFIG);
@@ -124,6 +138,14 @@ export function seedDatabase(db: DatabaseSync): void {
       'Administrator IOH',
       new Date().toISOString()
     );
+  }
+
+  // Seed Initial Relocation Requests
+  for (const reloc of INITIAL_RELOCATION_REQUESTS) {
+    const existing = db.prepare('SELECT id FROM relocation_requests WHERE id = ?').get(reloc.id);
+    if (!existing) {
+      createRelocationRequest(db, reloc);
+    }
   }
 }
 

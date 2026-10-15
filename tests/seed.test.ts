@@ -55,4 +55,25 @@ describe('Database Seeder', () => {
     assert.ok(zacky.passwordHash, 'Zacky must have passwordHash');
     assert.ok(verifyPassword('InternIOH2026!', zacky.passwordHash), 'Password hash must verify with InternIOH2026!');
   });
+
+  it('should seed default relocation request reloc-init-01 for intern-zacky idempotently', () => {
+    const db = createDatabase(':memory:');
+    initSchema(db);
+    seedDatabase(db);
+
+    const reloc = db.prepare('SELECT * FROM relocation_requests WHERE id = ?').get('reloc-init-01') as any;
+    assert.ok(reloc, 'reloc-init-01 must be seeded');
+    assert.equal(reloc.intern_id, 'intern-zacky');
+    assert.equal(reloc.current_location_id, 'loc-kppti');
+    assert.equal(reloc.target_location_id, 'loc-bsd');
+    assert.equal(reloc.status, 'PENDING');
+
+    // Run seed again to verify idempotency
+    assert.doesNotThrow(() => {
+      seedDatabase(db);
+    });
+    const relocAfter = db.prepare('SELECT * FROM relocation_requests WHERE id = ?').get('reloc-init-01') as any;
+    assert.ok(relocAfter);
+    assert.equal(relocAfter.status, 'PENDING');
+  });
 });

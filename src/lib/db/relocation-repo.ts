@@ -14,6 +14,10 @@ interface RelocationRequestRow {
   reviewed_by: string | null;
   reviewed_at: string | null;
   created_at: string;
+  intern_name?: string | null;
+  intern_email?: string | null;
+  current_office_name?: string | null;
+  target_office_name?: string | null;
 }
 
 function mapRelocationRow(row: RelocationRequestRow): RelocationRequest {
@@ -29,6 +33,12 @@ function mapRelocationRow(row: RelocationRequestRow): RelocationRequest {
     reviewedBy: row.reviewed_by,
     reviewedAt: row.reviewed_at,
     createdAt: row.created_at,
+    internName: row.intern_name || undefined,
+    internEmail: row.intern_email || undefined,
+    currentOfficeName: row.current_office_name || undefined,
+    targetOfficeName: row.target_office_name || undefined,
+    currentOfficeId: row.current_location_id,
+    targetOfficeId: row.target_location_id,
   };
 }
 
@@ -58,11 +68,24 @@ export function createRelocationRequest(
   return req;
 }
 
+const BASE_RELOCATION_SELECT = `
+  SELECT 
+    r.*,
+    i.nama_lengkap as intern_name,
+    i.email as intern_email,
+    c_loc.name as current_office_name,
+    t_loc.name as target_office_name
+  FROM relocation_requests r
+  LEFT JOIN interns i ON r.intern_id = i.id
+  LEFT JOIN office_locations c_loc ON r.current_location_id = c_loc.id
+  LEFT JOIN office_locations t_loc ON r.target_location_id = t_loc.id
+`;
+
 export function getRelocationRequestById(
   db: DatabaseSync,
   id: string
 ): RelocationRequest | null {
-  const stmt = db.prepare('SELECT * FROM relocation_requests WHERE id = ?');
+  const stmt = db.prepare(`${BASE_RELOCATION_SELECT} WHERE r.id = ?`);
   const row = stmt.get(id) as unknown as RelocationRequestRow | undefined;
   return row ? mapRelocationRow(row) : null;
 }
@@ -72,7 +95,7 @@ export function getPendingRelocationForIntern(
   internId: string
 ): RelocationRequest | null {
   const stmt = db.prepare(
-    "SELECT * FROM relocation_requests WHERE intern_id = ? AND status = 'PENDING' ORDER BY created_at DESC LIMIT 1"
+    `${BASE_RELOCATION_SELECT} WHERE r.intern_id = ? AND r.status = 'PENDING' ORDER BY r.created_at DESC LIMIT 1`
   );
   const row = stmt.get(internId) as unknown as RelocationRequestRow | undefined;
   return row ? mapRelocationRow(row) : null;
@@ -82,19 +105,19 @@ export function listRelocationRequests(
   db: DatabaseSync,
   filter?: { internId?: string; status?: RelocationStatus }
 ): RelocationRequest[] {
-  let query = 'SELECT * FROM relocation_requests WHERE 1=1';
+  let query = `${BASE_RELOCATION_SELECT} WHERE 1=1`;
   const params: unknown[] = [];
 
   if (filter?.internId) {
-    query += ' AND intern_id = ?';
+    query += ' AND r.intern_id = ?';
     params.push(filter.internId);
   }
   if (filter?.status) {
-    query += ' AND status = ?';
+    query += ' AND r.status = ?';
     params.push(filter.status);
   }
 
-  query += ' ORDER BY created_at DESC';
+  query += ' ORDER BY r.created_at DESC';
   const stmt = db.prepare(query);
   const rows = stmt.all(...params) as unknown as RelocationRequestRow[];
   return rows.map(mapRelocationRow);

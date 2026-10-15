@@ -207,6 +207,12 @@ export interface RelocationRequest {
   reviewedBy?: string | null;
   reviewedAt?: string | null;
   createdAt: string;
+  internName?: string;
+  internEmail?: string;
+  currentOfficeName?: string;
+  targetOfficeName?: string;
+  currentOfficeId?: string;
+  targetOfficeId?: string;
 }
 
 export interface InternRegistrationPayload {

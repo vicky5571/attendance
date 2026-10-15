@@ -111,6 +111,9 @@ export async function getRelocationRequests(internId?: string): Promise<Relocati
           });
           saveStoredRequests(merged);
           return merged;
+        } else {
+          saveStoredRequests([]);
+          return [];
         }
       }
     } catch {
