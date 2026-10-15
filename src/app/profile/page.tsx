@@ -14,7 +14,7 @@ import type { OfficeLocation, InternProfile } from '@/types';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
 
   const [internProfile, setInternProfile] = useState<InternProfile | null>(null);
   const [locations, setLocations] = useState<OfficeLocation[]>([]);
@@ -192,11 +192,20 @@ export default function ProfilePage() {
             <span>Kembali ke Absensi</span>
           </Link>
 
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full bg-[#ED0278]/10 text-[#ED0278] text-[10px] font-black tracking-wide uppercase">
-              Profil Magang
-            </span>
-          </div>
+          <button
+            type="button"
+            onClick={async () => {
+              await logout();
+              router.push('/login');
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-600 text-xs font-bold transition cursor-pointer active:scale-95"
+            title="Keluar dari akun"
+          >
+            <span>Keluar</span>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
         </div>
 
         {/* 1. Header Card: Foto + Nama + Status / Posisi */}
@@ -519,6 +528,23 @@ export default function ProfilePage() {
               )}
             </button>
           </form>
+        </div>
+
+        {/* Tombol Logout Sesi */}
+        <div className="pt-1">
+          <button
+            type="button"
+            onClick={async () => {
+              await logout();
+              router.push('/login');
+            }}
+            className="w-full py-3.5 px-4 rounded-2xl bg-white border border-rose-200 hover:bg-rose-50 hover:border-rose-300 text-rose-600 font-extrabold text-xs transition shadow-xs cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+          >
+            <svg className="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>Keluar dari Akun (Logout)</span>
+          </button>
         </div>
       </div>
     </div>

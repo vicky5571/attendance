@@ -463,7 +463,7 @@ export default function AttendancePage() {
         />
 
         {/* Enterprise Quick-Action Toolbar */}
-        <div className={`grid ${isSupervisorOrAdmin ? 'grid-cols-4' : 'grid-cols-3'} gap-2`}>
+        <div className={`grid ${isSupervisorOrAdmin ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
           <button
             type="button"
             onClick={() => setRequestModalOpen(true)}
@@ -489,16 +489,6 @@ export default function AttendancePage() {
               Catatan Presensi
             </span>
           </button>
-
-          <a
-            href="/profile"
-            className="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl bg-white border border-slate-100 shadow-xs hover:border-[#ED0278] hover:bg-[#ED0278]/5 transition cursor-pointer active:scale-95 text-center"
-          >
-            <span className="text-base mb-0.5">👤</span>
-            <span className="text-[10px] font-extrabold text-slate-700 leading-tight">
-              Profil Magang
-            </span>
-          </a>
 
           {isSupervisorOrAdmin && (
             <button
