@@ -239,14 +239,6 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* View Presensi Page button */}
-            <a
-              href="/"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 hover:border-[#ED0278] hover:text-[#ED0278] transition shadow-2xs"
-            >
-              <span>Presensi Magang</span>
-              <span>➔</span>
-            </a>
 
             {/* WA Modal button */}
             <button

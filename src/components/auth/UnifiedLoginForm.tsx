@@ -32,6 +32,11 @@ export function UnifiedLoginForm({ onSuccess }: UnifiedLoginFormProps) {
 
     if (result.success) {
       if (onSuccess) onSuccess();
+      if (result.user?.role === 'ADMIN' || result.user?.role === 'SUPERVISOR') {
+        router.push('/admin');
+      } else {
+        router.push('/');
+      }
     } else {
       setErrorMsg(result.error || 'Email atau password yang dimasukkan salah');
     }

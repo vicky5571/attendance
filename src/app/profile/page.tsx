@@ -37,10 +37,14 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+    if (!isLoading) {
+      if (!isAuthenticated || !user) {
+        router.push('/login');
+      } else if (user.role === 'ADMIN' || user.role === 'SUPERVISOR') {
+        router.push('/admin');
+      }
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLoading, isAuthenticated, user, router]);
 
   useEffect(() => {
     if (!user) return;
@@ -133,12 +137,16 @@ export default function ProfilePage() {
     }
   };
 
-  if (isLoading || loadingData) {
+  if (isLoading || loadingData || (user && (user.role === 'ADMIN' || user.role === 'SUPERVISOR'))) {
     return (
       <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-4">
         <div className="flex flex-col items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-[#ED0278] animate-ping" />
-          <span className="text-xs font-bold text-slate-500">Memuat profil magang...</span>
+          <span className="text-xs font-bold text-slate-500">
+            {user && (user.role === 'ADMIN' || user.role === 'SUPERVISOR')
+              ? 'Mengarahkan ke Dashboard Admin...'
+              : 'Memuat profil magang...'}
+          </span>
         </div>
       </div>
     );

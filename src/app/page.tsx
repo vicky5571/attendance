@@ -60,10 +60,14 @@ export default function AttendancePage() {
 
   // Route Authentication Guard
   useEffect(() => {
-    if (mounted && !isLoading && !isAuthenticated) {
-      router.push('/login');
+    if (mounted && !isLoading) {
+      if (!isAuthenticated || !user) {
+        router.push('/login');
+      } else if (user.role === 'ADMIN' || user.role === 'SUPERVISOR') {
+        router.push('/admin');
+      }
     }
-  }, [mounted, isLoading, isAuthenticated, router]);
+  }, [mounted, isLoading, isAuthenticated, user, router]);
 
   // Fetch pending approvals count (if admin / mentor)
   const fetchPendingCount = () => {
@@ -401,12 +405,16 @@ export default function AttendancePage() {
     }
   };
 
-  if (!mounted || isLoading) {
+  if (!mounted || isLoading || (user && (user.role === 'ADMIN' || user.role === 'SUPERVISOR'))) {
     return (
       <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
         <div className="flex flex-col items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-[#ED0278] animate-ping" />
-          <span className="text-xs font-bold text-slate-500">Memeriksa sesi login...</span>
+          <span className="text-xs font-bold text-slate-500">
+            {user && (user.role === 'ADMIN' || user.role === 'SUPERVISOR')
+              ? 'Mengarahkan ke Dashboard Admin...'
+              : 'Memeriksa sesi login...'}
+          </span>
         </div>
       </div>
     );

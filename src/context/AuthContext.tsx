@@ -10,9 +10,9 @@ interface AuthContextType {
   role: UserRole | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  loginAsIntern: (internId: string, pin: string) => Promise<{ success: boolean; error?: string }>;
-  loginAsAdmin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: AuthResponseUser }>;
+  loginAsIntern: (internId: string, pin: string) => Promise<{ success: boolean; error?: string; user?: AuthResponseUser }>;
+  loginAsAdmin: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: AuthResponseUser }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       setUser(res.user);
-      return { success: true };
+      return { success: true, user: res.user };
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Login gagal' };
     }
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       setUser(res.user);
-      return { success: true };
+      return { success: true, user: res.user };
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Login gagal' };
     }
@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       setUser(res.user);
-      return { success: true };
+      return { success: true, user: res.user };
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Login gagal' };
     }
