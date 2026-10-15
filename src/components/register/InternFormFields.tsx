@@ -235,8 +235,8 @@ export function InternFormFields({
                   : 'border-slate-200 hover:border-slate-300'
               }`}
             >
-              <div className="flex items-center gap-2 min-w-0 pr-2">
-                <div className="w-5 h-5 rounded-lg bg-pink-50 text-[#ED0278] flex items-center justify-center shrink-0">
+              <div className="flex items-center gap-2 flex-1 pr-2">
+                <div className="w-5 h-5 rounded-lg bg-pink-50 text-[#ED0278] flex items-center justify-center shrink-0 mt-0.5 self-start">
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
                       strokeLinecap="round"
@@ -246,19 +246,19 @@ export function InternFormFields({
                     />
                   </svg>
                 </div>
-                <div className="flex flex-col text-left truncate">
-                  <span className="truncate font-bold text-slate-900 text-xs">
+                <div className="flex flex-col text-left flex-1">
+                  <span className="font-bold text-slate-900 text-xs leading-snug">
                     {selectedLocation ? selectedLocation.name : 'Pilih Lokasi Kantor'}
                   </span>
                   {selectedLocation?.address && (
-                    <span className="truncate text-[10px] text-slate-400 font-normal">
+                    <span className="text-[10px] text-slate-400 font-normal leading-normal mt-0.5">
                       {selectedLocation.address}
                     </span>
                   )}
                 </div>
               </div>
               <svg
-                className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
+                className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 self-center ${
                   isDropdownOpen ? 'rotate-180 text-[#ED0278]' : ''
                 }`}
                 fill="none"
@@ -289,9 +289,9 @@ export function InternFormFields({
                             : 'hover:bg-slate-50 border border-transparent text-slate-700'
                         }`}
                       >
-                        <div className="flex flex-col min-w-0 pr-1 text-left">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-extrabold text-xs text-slate-900 truncate">
+                        <div className="flex flex-col flex-1 pr-1 text-left">
+                          <div className="flex items-center justify-between gap-1.5">
+                            <span className="font-extrabold text-xs text-slate-900 leading-snug">
                               {loc.name}
                             </span>
                             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 shrink-0">
@@ -299,7 +299,7 @@ export function InternFormFields({
                             </span>
                           </div>
                           {loc.address && (
-                            <span className="text-[10px] text-slate-500 font-normal truncate mt-0.5">
+                            <span className="text-[10px] text-slate-500 font-normal leading-normal mt-0.5">
                               {loc.address}
                             </span>
                           )}
