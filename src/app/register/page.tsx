@@ -38,12 +38,17 @@ export default function RegisterPage() {
   } | null>(null);
 
   useEffect(() => {
-    fetch('/api/config/locations')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: OfficeLocation[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setLocations(data);
-          setFormData((prev) => ({ ...prev, assignedLocationId: data[0].id }));
+    fetch('/api/config/locations?active=true')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const list: OfficeLocation[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.locations)
+          ? data.locations
+          : [];
+        if (list.length > 0) {
+          setLocations(list);
+          setFormData((prev) => ({ ...prev, assignedLocationId: list[0].id }));
         }
       })
       .catch(() => {
