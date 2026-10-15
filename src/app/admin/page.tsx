@@ -343,9 +343,18 @@ export default function AdminDashboardPage() {
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-lg">👥</span>
+                <div className="w-7 h-7 rounded-lg bg-pink-50 text-[#ED0278] flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                </div>
                 <h2 className="text-sm font-extrabold text-slate-900">
-                  Daftar Peserta Magang & Timesheet Logbook
+                  Daftar Peserta Magang &amp; Timesheet Logbook
                 </h2>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -381,17 +390,33 @@ export default function AdminDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setInspectIntern(intern)}
-                    className="flex-1 py-1.5 px-2 rounded-xl bg-white border border-slate-200 hover:border-[#ED0278] text-slate-700 font-extrabold text-[11px] transition shadow-2xs text-center cursor-pointer"
+                    className="flex-1 py-1.5 px-2 rounded-xl bg-white border border-slate-200 hover:border-[#ED0278] text-slate-700 font-extrabold text-[11px] transition shadow-2xs text-center cursor-pointer flex items-center justify-center gap-1.5"
                   >
-                    📊 Detail Logbook
+                    <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                      />
+                    </svg>
+                    <span>Detail Logbook</span>
                   </button>
 
                   <a
                     href={`/api/reports/monthly-export?internId=${encodeURIComponent(intern.id)}&month=${currentMonthStr}`}
                     download
-                    className="flex-1 py-1.5 px-2 rounded-xl bg-[#ED0278] hover:bg-[#d6026c] text-white font-extrabold text-[11px] transition shadow-2xs text-center cursor-pointer"
+                    className="flex-1 py-1.5 px-2 rounded-xl bg-[#ED0278] hover:bg-[#d6026c] text-white font-extrabold text-[11px] transition shadow-2xs text-center cursor-pointer flex items-center justify-center gap-1.5"
                   >
-                    📥 Unduh CSV
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      />
+                    </svg>
+                    <span>Unduh CSV</span>
                   </a>
                 </div>
               </div>
