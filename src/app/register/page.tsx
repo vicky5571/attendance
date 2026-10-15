@@ -138,7 +138,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-[#F8F9FA] text-slate-900 flex flex-col items-center justify-center p-4 sm:p-6 font-sans">
       <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-100 flex flex-col">
         {/* Navigation & Header */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center mb-5">
           <Link
             href="/login"
             className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#ED0278] transition-colors"
@@ -148,9 +148,6 @@ export default function RegisterPage() {
             </svg>
             <span>Kembali ke Login</span>
           </Link>
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-pink-600 bg-pink-50 border border-pink-200/60 px-2.5 py-1 rounded-full">
-            Registrasi Baru
-          </span>
         </div>
 
         <div className="flex flex-col items-center text-center mb-6">
