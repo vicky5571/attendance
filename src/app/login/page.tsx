@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { AdminLoginForm } from '@/components/auth/AdminLoginForm';
@@ -83,10 +84,25 @@ export default function LoginPage() {
           <AdminLoginForm />
         )}
 
+        {/* Registration CTA for Interns */}
+        {activeTab === 'intern' && (
+          <div className="mt-4 pt-4 border-t border-slate-100 w-full text-center">
+            <p className="text-xs text-slate-500 font-medium">
+              Peserta magang baru?{' '}
+              <Link
+                href="/register"
+                className="font-bold text-[#ED0278] hover:text-[#c40062] transition-colors underline decoration-pink-300 underline-offset-2"
+              >
+                Daftar Akun &amp; Biometrik
+              </Link>
+            </p>
+          </div>
+        )}
+
         {/* Security Footer */}
         <div className="mt-6 pt-4 border-t border-slate-100 w-full text-center">
           <p className="text-[10px] text-slate-400 font-medium">
-            🔒 Dilindungi Autentikasi Sesi & Geofencing Anti-Proxy
+            🔒 Dilindungi Autentikasi Sesi &amp; Geofencing Anti-Proxy
           </p>
         </div>
       </div>
