@@ -42,9 +42,9 @@
 **Files:**
 - Modify: `src/types/index.ts`
 
-- [ ] **Step 1: Write type definitions for registration**
+- [x] **Step 1: Write type definitions for registration**
   Add `InternRegistrationPayload` and `RegistrationResponse` to `src/types/index.ts`.
-- [ ] **Step 2: Verify type check passes**
+- [x] **Step 2: Verify type check passes**
   Run `npx tsc --noEmit` and confirm 0 errors.
 
 ---
@@ -55,16 +55,16 @@
 - Create: `src/lib/services/face-detection.ts`
 - Create: `tests/face-detection.test.ts`
 
-- [ ] **Step 1: Write failing tests in `tests/face-detection.test.ts`**
+- [x] **Step 1: Write failing tests in `tests/face-detection.test.ts`**
   Test cases:
   1. Detects face in a simulated human portrait buffer (valid dimensions, skin chromatic cluster, feature variance).
   2. Rejects image with invalid/too-small dimensions (<150x150).
   3. Rejects image with no skin tones (e.g. pure blue/green solid color, scenery).
   4. Rejects uniform flat images with no facial variance/contrast (e.g. solid peach color).
   5. Handles corrupted/non-image buffer gracefully with false detection.
-- [ ] **Step 2: Implement `src/lib/services/face-detection.ts`**
+- [x] **Step 2: Implement `src/lib/services/face-detection.ts`**
   Implement `detectFace(buffer: Buffer): Promise<FaceDetectionResult>` using `sharp`.
-- [ ] **Step 3: Run verification command**
+- [x] **Step 3: Run verification command**
   Run `npm run test:fast tests/face-detection.test.ts` and ensure all tests pass in <500ms.
 
 ---
@@ -75,7 +75,7 @@
 - Create: `src/app/api/auth/register/route.ts`
 - Create: `tests/registration-api.test.ts`
 
-- [ ] **Step 1: Write failing integration tests in `tests/registration-api.test.ts`**
+- [x] **Step 1: Write failing integration tests in `tests/registration-api.test.ts`**
   Test cases:
   1. Registers new intern with valid payload and human face photo, returning 201 with saved profile.
   2. Verifies photo is stored on disk under `public/uploads/faces/` and mapped to `interns.photo_url`.
@@ -84,9 +84,9 @@
   5. Rejects invalid 6-digit PIN with 400.
   6. Rejects upload where face detection fails (e.g. solid red image) with 422 Unprocessable Entity.
   7. Newly registered intern can immediately authenticate via `POST /api/auth/login`.
-- [ ] **Step 2: Implement `src/app/api/auth/register/route.ts`**
+- [x] **Step 2: Implement `src/app/api/auth/register/route.ts`**
   Validate fields, run `detectFace`, write image to disk, hash password (`scrypt`), hash/store PIN, call `createIntern`, and return `201`.
-- [ ] **Step 3: Run verification command**
+- [x] **Step 3: Run verification command**
   Run `npm run test:fast tests/registration-api.test.ts` and ensure all tests pass.
 
 ---
@@ -96,21 +96,23 @@
 **Files:**
 - Create: `src/app/register/page.tsx`
 
-- [ ] **Step 1: Build raw HTML/CSS form component**
+- [x] **Step 1: Build raw HTML/CSS form component**
   Build `src/app/register/page.tsx` using native semantic elements and scoped `<style>` block:
   - Form fields: Name, Email, Password, PIN, Division, Mentor Name, Mentor Email, University, Major, End Date, Assigned Office.
   - Video element (`<video>`) + Capture button (`<button>`) + offscreen `<canvas>` for snapshot.
   - File picker fallback (`<input type="file" accept="image/*">`).
   - Preview card with "Ambil Ulang" and "Gunakan Foto".
   - Async fetch submission to `/api/auth/register` with error alerts and success state.
-- [ ] **Step 2: Verify page build with `npm run build`**
+- [x] **Step 2: Verify page build with `npm run build`**
   Ensure Next.js compiles the `/register` route cleanly without any type or lint errors.
 
 ---
 
 ### Task 5: Full Suite Verification & Regression Check [BACKEND / branch: vicky]
 
-- [ ] **Step 1: Run complete test suite**
+- [x] **Step 1: Run complete test suite**
   Run `npm test` to confirm all 186+ tests pass with zero regressions.
-- [ ] **Step 2: Commit backend deliverables on branch `vicky`**
+- [x] **Step 2: Commit backend deliverables on branch `vicky`**
   Commit with clear conventional commit messages.
+
+

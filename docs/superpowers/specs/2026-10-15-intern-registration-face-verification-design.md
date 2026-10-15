@@ -125,3 +125,4 @@ The face detection validator processes raw image buffers via `sharp`:
 3. **Zero Frontend Interference:**
    - Frontend branch `zacky` owns Tailwind PWA styling.
    - The `/register` page uses pure vanilla scoped styles so it can be used immediately by backend/QA and later refactored by Zacky into a branded PWA component when scheduled.
+

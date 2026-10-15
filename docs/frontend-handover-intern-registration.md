@@ -87,3 +87,4 @@ The backend team on branch `vicky` has implemented and verified the complete int
 The raw HTML/CSS form at `/register` is completely functional right now. When the frontend team (`zacky`) is ready to style this page into the mobile PWA theme:
 - The form fields, state hooks, and API fetch calls can be seamlessly wrapped into a styled Tailwind component matching the mobile design tokens.
 - Add a "Daftar Akun Baru" link on `src/app/login/page.tsx` pointing to `/register`.
+
