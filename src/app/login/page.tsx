@@ -3,17 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { InternLoginForm } from '@/components/auth/InternLoginForm';
 import { AdminLoginForm } from '@/components/auth/AdminLoginForm';
 import { UnifiedLoginForm } from '@/components/auth/UnifiedLoginForm';
-import type { InternProfile } from '@/types';
 
 export default function LoginPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<'intern' | 'admin'>('intern');
-  const [internAuthMode, setInternAuthMode] = useState<'pin' | 'credentials'>('pin');
-  const [interns, setInterns] = useState<InternProfile[]>([]);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
@@ -24,13 +20,6 @@ export default function LoginPage() {
       }
     }
   }, [isAuthenticated, isLoading, user, router]);
-
-  useEffect(() => {
-    fetch('/api/interns')
-      .then((r) => (r.ok ? r.json() : []))
-      .then(setInterns)
-      .catch(() => {});
-  }, []);
 
   if (isLoading) {
     return (
@@ -87,41 +76,9 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {/* Alternative Auth Sub-toggle for Interns */}
-        {activeTab === 'intern' && (
-          <div className="flex items-center justify-center gap-1.5 p-1 bg-slate-50 border border-slate-200/80 rounded-xl mb-4 w-full">
-            <button
-              type="button"
-              onClick={() => setInternAuthMode('pin')}
-              className={`flex-1 py-1 px-2 rounded-lg text-[10px] font-extrabold transition cursor-pointer ${
-                internAuthMode === 'pin'
-                  ? 'bg-white text-[#ED0278] shadow-2xs'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              PIN Presensi
-            </button>
-            <button
-              type="button"
-              onClick={() => setInternAuthMode('credentials')}
-              className={`flex-1 py-1 px-2 rounded-lg text-[10px] font-extrabold transition cursor-pointer ${
-                internAuthMode === 'credentials'
-                  ? 'bg-white text-[#ED0278] shadow-2xs'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              Username & Password
-            </button>
-          </div>
-        )}
-
         {/* Active Form */}
         {activeTab === 'intern' ? (
-          internAuthMode === 'pin' ? (
-            <InternLoginForm interns={interns} />
-          ) : (
-            <UnifiedLoginForm />
-          )
+          <UnifiedLoginForm />
         ) : (
           <AdminLoginForm />
         )}
