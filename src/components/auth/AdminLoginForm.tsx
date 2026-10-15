@@ -42,16 +42,16 @@ export function AdminLoginForm({ onSuccess }: AdminLoginFormProps) {
         </div>
       )}
 
-      {/* Email Input */}
+      {/* Username / Email Input */}
       <div>
         <label className="block text-xs font-extrabold text-slate-700 mb-1">
-          Email Admin / Mentor
+          Username atau Email
         </label>
         <input
-          type="email"
+          type="text"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="admin@ioh.co.id"
+          placeholder="admin atau admin@ioh.co.id"
           required
           className="w-full px-3.5 py-2.5 text-xs font-bold border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:border-[#ED0278] transition"
         />
@@ -80,7 +80,7 @@ export function AdminLoginForm({ onSuccess }: AdminLoginFormProps) {
           </button>
         </div>
         <p className="text-[10px] text-slate-400 mt-1">
-          Default akun: <strong className="text-slate-700">admin@ioh.co.id</strong> / <strong className="text-slate-700 font-mono">AdminIOH2026!</strong>
+          Default akun: <strong className="text-slate-700">admin</strong> / <strong className="text-slate-700">admin@ioh.co.id</strong> &bull; Password: <strong className="text-slate-700 font-mono">AdminIOH2026!</strong>
         </p>
       </div>
 

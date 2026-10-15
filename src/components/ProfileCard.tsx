@@ -68,9 +68,17 @@ export function ProfileCard({
 
       {/* Profil Detail */}
       <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#ED0278] to-[#FF4B98] flex items-center justify-center text-white font-extrabold text-xl shadow-md shadow-pink-500/20">
-          {active?.namaLengkap ? active.namaLengkap.charAt(0) : 'U'}
-        </div>
+        {active?.photoUrl ? (
+          <img
+            src={active.photoUrl}
+            alt={active.namaLengkap}
+            className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow-md shadow-pink-500/10 shrink-0"
+          />
+        ) : (
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#ED0278] to-[#FF4B98] flex items-center justify-center text-white font-extrabold text-xl shadow-md shadow-pink-500/20 shrink-0">
+            {active?.namaLengkap ? active.namaLengkap.charAt(0) : 'U'}
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <h2 className="text-base font-extrabold text-slate-900 tracking-tight truncate">
             {active?.namaLengkap}

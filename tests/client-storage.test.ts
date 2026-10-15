@@ -6,6 +6,8 @@ import {
   removeAttendanceCache,
   saveSelectedInternId,
   getSelectedInternId,
+  saveInternPhotoUrl,
+  getInternPhotoUrl,
   clearAllMemoryCache,
 } from '../src/lib/client-storage.ts';
 
@@ -65,5 +67,12 @@ describe('Client Storage & Offline Caching Helper', () => {
 
     removeAttendanceCache('intern-sarah', '2026-10-08');
     assert.equal(getAttendanceCache('intern-sarah', '2026-10-08'), null);
+  });
+
+  it('should persist and retrieve intern verified photo URL', () => {
+    assert.equal(getInternPhotoUrl('intern-sarah'), null);
+
+    saveInternPhotoUrl('intern-sarah', '/uploads/selfies/sarah-photo.jpg');
+    assert.equal(getInternPhotoUrl('intern-sarah'), '/uploads/selfies/sarah-photo.jpg');
   });
 });

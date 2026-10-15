@@ -13,6 +13,7 @@ import { RequestModal } from '@/components/RequestModal';
 import { HistoryModal } from '@/components/HistoryModal';
 import { MentorApprovalModal } from '@/components/MentorApprovalModal';
 import { ChangeOfficeModal } from '@/components/ChangeOfficeModal';
+import { SelfieModal } from '@/components/SelfieModal';
 import { DevTimeBar } from '@/components/dev/DevTimeBar';
 import { calculateDistance, isWithinRadius } from '@/lib/client-geo';
 import {
@@ -21,6 +22,7 @@ import {
   removeAttendanceCache,
   saveSelectedOffice,
   getSelectedOffice,
+  saveInternPhotoUrl,
 } from '@/lib/client-storage';
 import type { OfficeConfig, InternProfile, OfficeLocation } from '@/types';
 
@@ -45,6 +47,9 @@ export default function AttendancePage() {
   const [isWaModalOpen, setIsWaModalOpen] = useState(false);
 
   // Modals state
+  const [selfieModalOpen, setSelfieModalOpen] = useState(false);
+  const [pendingSelfiePhotoUrl, setPendingSelfiePhotoUrl] = useState<string | null>(null);
+  const [isUploadingSelfie, setIsUploadingSelfie] = useState(false);
   const [pinModalOpen, setPinModalOpen] = useState(false);
   const [pendingActionType, setPendingActionType] = useState<'check-in' | 'check-out' | null>(null);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
@@ -269,7 +274,39 @@ export default function AttendancePage() {
     if (!coords) return notify('Koordinat GPS belum siap', 'error');
     if (!isWithin) return notify(`Di luar radius batas geofence (${maxRadius}m)`, 'error');
     setPendingActionType(type);
-    setPinModalOpen(true);
+    setPendingSelfiePhotoUrl(null);
+    setSelfieModalOpen(true);
+  };
+
+  const handleSelfieCaptured = async (base64Image: string) => {
+    if (!currentInternId || !pendingActionType) return;
+    setIsUploadingSelfie(true);
+    try {
+      const res = await fetch('/api/attendance/upload-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internId: currentInternId,
+          image: base64Image,
+          type: pendingActionType === 'check-in' ? 'CHECK_IN' : 'CHECK_OUT',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        notify(data.error || 'Gagal mengunggah foto selfie', 'error');
+        setIsUploadingSelfie(false);
+        return;
+      }
+
+      setPendingSelfiePhotoUrl(data.photoUrl);
+      setIsUploadingSelfie(false);
+      setSelfieModalOpen(false);
+      setPinModalOpen(true);
+    } catch {
+      notify('Koneksi server gagal saat mengunggah foto', 'error');
+      setIsUploadingSelfie(false);
+    }
   };
 
   // Submit check-in or check-out with verified PIN for the authenticated intern
@@ -280,17 +317,26 @@ export default function AttendancePage() {
     const timestampPayload = simulatedTime ? `${targetDate}T${simulatedTime}:00` : undefined;
 
     try {
+      const punchBody: Record<string, any> = {
+        internId: currentInternId,
+        latitude: coords.lat,
+        longitude: coords.lng,
+        pin,
+        locationId: selectedLocationId,
+        timestamp: timestampPayload,
+      };
+
+      if (pendingSelfiePhotoUrl) {
+        punchBody.photoUrl = pendingSelfiePhotoUrl;
+        if (pendingActionType === 'check-out') {
+          punchBody.checkOutPhotoUrl = pendingSelfiePhotoUrl;
+        }
+      }
+
       const res = await fetch(`/api/attendance/${pendingActionType}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          internId: currentInternId,
-          latitude: coords.lat,
-          longitude: coords.lng,
-          pin,
-          locationId: selectedLocationId,
-          timestamp: timestampPayload,
-        }),
+        body: JSON.stringify(punchBody),
       });
       const data = await res.json();
       if (res.ok) {
@@ -315,6 +361,20 @@ export default function AttendancePage() {
 
         setRecords(updated);
         saveAttendanceCache(currentInternId, targetDate, updated);
+
+        if (pendingSelfiePhotoUrl) {
+          saveInternPhotoUrl(currentInternId, pendingSelfiePhotoUrl);
+          setInterns((prev) =>
+            prev.map((i) =>
+              i.id === currentInternId ? { ...i, photoUrl: pendingSelfiePhotoUrl } : i
+            )
+          );
+          if (user) {
+            user.photoUrl = pendingSelfiePhotoUrl;
+          }
+        }
+        setPendingSelfiePhotoUrl(null);
+
         notify(`Berhasil ${pendingActionType === 'check-in' ? 'Check-In' : 'Check-Out'}!`, 'success');
         setPinModalOpen(false);
         setPendingActionType(null);
@@ -393,18 +453,6 @@ export default function AttendancePage() {
           waStatus={wa.status}
           onOpenWaModal={() => setIsWaModalOpen(true)}
         />
-
-        {/* Development Mode Time Manipulation & Reset Toolbar */}
-        {process.env.NODE_ENV !== 'production' && (
-          <DevTimeBar
-            simulatedTime={simulatedTime}
-            simulatedDate={simulatedDate}
-            onSetSimulatedTime={setSimulatedTime}
-            onSetSimulatedDate={setSimulatedDate}
-            onResetTodayAttendance={handleResetTodayAttendance}
-            isResetting={isResettingAttendance}
-          />
-        )}
 
         {/* Enterprise Quick-Action Toolbar */}
         <div className={`grid ${isSupervisorOrAdmin ? 'grid-cols-4' : 'grid-cols-3'} gap-2`}>
@@ -512,12 +560,27 @@ export default function AttendancePage() {
         onConnect={handleConnectWa}
       />
 
+      {/* Selfie Camera Verification Modal */}
+      <SelfieModal
+        isOpen={selfieModalOpen}
+        onClose={() => {
+          setSelfieModalOpen(false);
+          setPendingActionType(null);
+          setPendingSelfiePhotoUrl(null);
+        }}
+        onCapture={handleSelfieCaptured}
+        actionType={pendingActionType || 'check-in'}
+        internName={activeIntern?.namaLengkap || 'Peserta'}
+        isUploading={isUploadingSelfie}
+      />
+
       {/* PIN Anti-Proxy Verification Modal */}
       <PinModal
         isOpen={pinModalOpen}
         onClose={() => {
           setPinModalOpen(false);
           setPendingActionType(null);
+          setPendingSelfiePhotoUrl(null);
         }}
         onSubmit={executeAttendanceWithPin}
         actionType={pendingActionType || 'check-in'}
@@ -565,6 +628,18 @@ export default function AttendancePage() {
         selectedLocationId={selectedLocationId}
         onSelectLocation={handleLocationChange}
       />
+
+      {/* Floating Development Mode Time Manipulation & Reset Toolbar */}
+      {process.env.NODE_ENV !== 'production' && (
+        <DevTimeBar
+          simulatedTime={simulatedTime}
+          simulatedDate={simulatedDate}
+          onSetSimulatedTime={setSimulatedTime}
+          onSetSimulatedDate={setSimulatedDate}
+          onResetTodayAttendance={handleResetTodayAttendance}
+          isResetting={isResettingAttendance}
+        />
+      )}
     </div>
   );
 }

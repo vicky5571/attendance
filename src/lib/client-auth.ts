@@ -6,11 +6,11 @@ import type { AuthResponse, AuthResponseUser, InternLoginPayload, AdminLoginPayl
  * Session cookie (ioh_session) is handled automatically via HttpOnly browser cookies.
  */
 
-export async function loginWithCredentials(email: string, password: string): Promise<AuthResponse> {
+export async function loginWithCredentials(identifier: string, password: string): Promise<AuthResponse> {
   const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ identifier, email: identifier, password }),
   });
 
   const data = await res.json();
@@ -42,17 +42,16 @@ export async function loginIntern(internId: string, pin: string): Promise<AuthRe
   return data as AuthResponse;
 }
 
-export async function loginAdmin(email: string, password: string): Promise<AuthResponse> {
-  const payload: AdminLoginPayload = {
-    role: 'ADMIN',
-    email,
-    password,
-  };
-
+export async function loginAdmin(identifier: string, password: string): Promise<AuthResponse> {
   const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      role: 'ADMIN',
+      identifier,
+      email: identifier,
+      password,
+    }),
   });
 
   const data = await res.json();

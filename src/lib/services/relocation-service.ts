@@ -11,19 +11,21 @@
 export interface RelocationRequest {
   id: string;
   internId: string;
-  internName: string;
+  internName?: string;
   internEmail?: string;
-  currentOfficeId: string;
-  currentOfficeName: string;
-  targetOfficeId: string;
-  targetOfficeName: string;
+  currentOfficeId?: string;
+  currentOfficeName?: string;
+  currentLocationId?: string;
+  targetOfficeId?: string;
+  targetOfficeName?: string;
+  targetLocationId?: string;
   reason: string;
-  notes?: string;
+  notes?: string | null;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  rejectionReason?: string;
+  rejectionReason?: string | null;
   createdAt: string;
-  reviewedAt?: string;
-  reviewedBy?: string;
+  reviewedAt?: string | null;
+  reviewedBy?: string | null;
 }
 
 const STORAGE_KEY = 'ioh_relocation_requests';
@@ -37,8 +39,10 @@ const INITIAL_REQUESTS: RelocationRequest[] = [
     internName: 'Zacky Kurniawan',
     internEmail: 'zacky.kurniawan@ioh.co.id',
     currentOfficeId: 'loc-kppti',
+    currentLocationId: 'loc-kppti',
     currentOfficeName: 'KPPTI Jakarta Pusat (HQ)',
     targetOfficeId: 'loc-bsd',
+    targetLocationId: 'loc-bsd',
     targetOfficeName: 'Gedung Indosat Serpong BSD',
     reason: 'Pindah domisili ke Tangerang Selatan agar lebih dekat dengan lokasi kerja tim Network.',
     notes: 'Sudah berkoordinasi dengan mentor Vicky.',
@@ -78,11 +82,41 @@ function saveStoredRequests(list: RelocationRequest[]): void {
  * Mengambil daftar pengajuan pindah kantor
  */
 export async function getRelocationRequests(internId?: string): Promise<RelocationRequest[]> {
-  // INTEGRASI BACKEND:
-  // try {
-  //   const res = await fetch(`/api/interns/relocation${internId ? `?internId=${internId}` : ''}`);
-  //   if (res.ok) return await res.json();
-  // } catch {}
+  if (typeof window !== 'undefined') {
+    try {
+      const url = `/api/interns/relocation${internId ? `?internId=${encodeURIComponent(internId)}` : ''}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        const serverList: RelocationRequest[] = Array.isArray(data?.requests)
+          ? data.requests
+          : Array.isArray(data)
+          ? data
+          : [];
+
+        if (serverList.length > 0) {
+          // Normalize and merge with local office names if needed
+          const localStored = getStoredRequests();
+          const merged = serverList.map((srv) => {
+            const localMatch = localStored.find((l) => l.id === srv.id);
+            return {
+              ...srv,
+              currentOfficeId: srv.currentLocationId || srv.currentOfficeId,
+              targetOfficeId: srv.targetLocationId || srv.targetOfficeId,
+              currentOfficeName:
+                srv.currentOfficeName || localMatch?.currentOfficeName || srv.currentLocationId,
+              targetOfficeName:
+                srv.targetOfficeName || localMatch?.targetOfficeName || srv.targetLocationId,
+            };
+          });
+          saveStoredRequests(merged);
+          return merged;
+        }
+      }
+    } catch {
+      // Fallback to offline localStorage
+    }
+  }
 
   const all = getStoredRequests();
   if (internId) {
@@ -120,27 +154,34 @@ export function getCurrentOfficeForIntern(internId: string, defaultOffice = 'KPP
  */
 export async function submitRelocationRequest(payload: {
   internId: string;
-  internName: string;
+  internName?: string;
   internEmail?: string;
-  currentOfficeId: string;
-  currentOfficeName: string;
-  targetOfficeId: string;
-  targetOfficeName: string;
+  currentOfficeId?: string;
+  currentLocationId?: string;
+  currentOfficeName?: string;
+  targetOfficeId?: string;
+  targetLocationId?: string;
+  targetOfficeName?: string;
   reason: string;
   notes?: string;
 }): Promise<{ success: boolean; error?: string; request?: RelocationRequest }> {
+  const currentLocId = payload.currentLocationId || payload.currentOfficeId || 'loc-kppti';
+  const targetLocId = payload.targetLocationId || payload.targetOfficeId || '';
+  const currentOfficeName = payload.currentOfficeName || currentLocId;
+  const targetOfficeName = payload.targetOfficeName || targetLocId;
+
   // Validasi Frontend
-  if (!payload.targetOfficeId || !payload.targetOfficeName) {
+  if (!targetLocId || (payload.targetOfficeName !== undefined && !payload.targetOfficeName)) {
     return { success: false, error: 'Kantor tujuan wajib dipilih' };
   }
-  if (payload.targetOfficeId === payload.currentOfficeId) {
+  if (targetLocId === currentLocId) {
     return { success: false, error: 'Kantor tujuan tidak boleh sama dengan kantor saat ini' };
   }
   if (!payload.reason || payload.reason.trim().length === 0) {
     return { success: false, error: 'Alasan pindah kantor wajib diisi' };
   }
 
-  // Cek apakah ada pengajuan PENDING yang belum diproses
+  // Cek apakah ada pengajuan PENDING di storage lokal
   const all = getStoredRequests();
   const existingPending = all.find(
     (r) => r.internId === payload.internId && r.status === 'PENDING'
@@ -152,30 +193,65 @@ export async function submitRelocationRequest(payload: {
     };
   }
 
+  // Live backend call jika berjalan di browser
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/interns/relocation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internId: payload.internId,
+          currentLocationId: currentLocId,
+          targetLocationId: targetLocId,
+          reason: payload.reason.trim(),
+          notes: payload.notes?.trim() || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        return {
+          success: false,
+          error: data.error || 'Gagal mengirim pengajuan pindah kantor',
+        };
+      }
+
+      const serverRequest: RelocationRequest = {
+        ...data.request,
+        internName: payload.internName,
+        internEmail: payload.internEmail,
+        currentOfficeId: currentLocId,
+        currentLocationId: currentLocId,
+        currentOfficeName,
+        targetOfficeId: targetLocId,
+        targetLocationId: targetLocId,
+        targetOfficeName,
+      };
+
+      const updated = [serverRequest, ...all.filter((r) => r.id !== serverRequest.id)];
+      saveStoredRequests(updated);
+      return { success: true, request: serverRequest };
+    } catch {
+      // Offline fallback: lanjutkan membuat secara lokal
+    }
+  }
+
   const newRequest: RelocationRequest = {
     id: `reloc-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     internId: payload.internId,
-    internName: payload.internName,
+    internName: payload.internName || payload.internId,
     internEmail: payload.internEmail,
-    currentOfficeId: payload.currentOfficeId,
-    currentOfficeName: payload.currentOfficeName,
-    targetOfficeId: payload.targetOfficeId,
-    targetOfficeName: payload.targetOfficeName,
+    currentOfficeId: currentLocId,
+    currentLocationId: currentLocId,
+    currentOfficeName,
+    targetOfficeId: targetLocId,
+    targetLocationId: targetLocId,
+    targetOfficeName,
     reason: payload.reason.trim(),
     notes: payload.notes?.trim() || undefined,
     status: 'PENDING',
     createdAt: new Date().toISOString(),
   };
-
-  // INTEGRASI BACKEND:
-  // try {
-  //   const res = await fetch('/api/interns/relocation', {
-  //     method: 'POST',
-  //     headers: { 'Content-Type': 'application/json' },
-  //     body: JSON.stringify(newRequest)
-  //   });
-  //   if (res.ok) { ... }
-  // } catch {}
 
   const updated = [newRequest, ...all];
   saveStoredRequests(updated);
@@ -192,29 +268,54 @@ export async function reviewRelocationRequest(
   reviewedBy: string,
   rejectionReason?: string
 ): Promise<{ success: boolean; error?: string }> {
-  const all = getStoredRequests();
-  const index = all.findIndex((r) => r.id === id);
-  if (index === -1) {
-    return { success: false, error: 'Pengajuan tidak ditemukan' };
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch(`/api/interns/relocation/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status,
+          reviewedBy,
+          rejectionReason,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        return {
+          success: false,
+          error: data.error || 'Gagal memproses persetujuan pengajuan',
+        };
+      }
+    } catch {
+      // Offline fallback
+    }
   }
 
-  const target = all[index];
-  const updatedReq: RelocationRequest = {
-    ...target,
-    status,
-    reviewedBy,
-    reviewedAt: new Date().toISOString(),
-    rejectionReason: status === 'REJECTED' ? rejectionReason : undefined,
-  };
+  const all = getStoredRequests();
+  const index = all.findIndex((r) => r.id === id);
+  if (index !== -1) {
+    const target = all[index];
+    const updatedReq: RelocationRequest = {
+      ...target,
+      status,
+      reviewedBy,
+      reviewedAt: new Date().toISOString(),
+      rejectionReason: status === 'REJECTED' ? rejectionReason : undefined,
+    };
 
-  all[index] = updatedReq;
-  saveStoredRequests(all);
+    all[index] = updatedReq;
+    saveStoredRequests(all);
 
-  // Jika APPROVED, perbarui kantor saat ini milik intern
-  if (status === 'APPROVED' && typeof window !== 'undefined') {
-    try {
-      localStorage.setItem(`${USER_OFFICE_KEY_PREFIX}${target.internId}`, target.targetOfficeName);
-    } catch {}
+    // Jika APPROVED, perbarui kantor saat ini milik intern di local storage
+    if (status === 'APPROVED' && typeof window !== 'undefined') {
+      try {
+        const officeName = target.targetOfficeName || target.targetLocationId || target.targetOfficeId;
+        if (officeName) {
+          localStorage.setItem(`${USER_OFFICE_KEY_PREFIX}${target.internId}`, officeName);
+        }
+      } catch {}
+    }
   }
 
   return { success: true };

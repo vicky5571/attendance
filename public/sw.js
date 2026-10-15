@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ioh-attendance-v1';
+const CACHE_NAME = 'ioh-attendance-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -60,7 +60,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: Cache first, fallback to network
+  // Next.js chunks & bundles: Network-first to always reflect latest code updates
+  if (url.pathname.startsWith('/_next/')) {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Static images/icons assets: Cache first, fallback to network
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
@@ -70,7 +78,6 @@ self.addEventListener('fetch', (event) => {
           networkResponse &&
           networkResponse.status === 200 &&
           (url.pathname.startsWith('/icons/') ||
-           url.pathname.startsWith('/_next/static/') ||
            url.pathname.endsWith('.svg') ||
            url.pathname.endsWith('.png') ||
            url.pathname.endsWith('.ico'))

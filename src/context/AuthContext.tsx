@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { loginIntern, loginAdmin, loginWithCredentials, fetchCurrentUser, logoutUser } from '@/lib/client-auth';
+import { saveInternPhotoUrl, getInternPhotoUrl } from '@/lib/client-storage';
 import type { AuthResponseUser, UserRole } from '@/types';
 
 interface AuthContextType {
@@ -25,6 +26,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = useCallback(async () => {
     try {
       const current = await fetchCurrentUser();
+      if (current) {
+        if (current.photoUrl) {
+          saveInternPhotoUrl(current.id, current.photoUrl);
+        } else {
+          const cachedPhoto = getInternPhotoUrl(current.id);
+          if (cachedPhoto) {
+            current.photoUrl = cachedPhoto;
+          }
+        }
+      }
       setUser(current);
     } catch {
       setUser(null);
@@ -40,6 +51,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       const res = await loginWithCredentials(email, password);
+      if (res.user?.photoUrl) {
+        saveInternPhotoUrl(res.user.id, res.user.photoUrl);
+      } else if (res.user) {
+        const cachedPhoto = getInternPhotoUrl(res.user.id);
+        if (cachedPhoto) {
+          res.user.photoUrl = cachedPhoto;
+        }
+      }
       setUser(res.user);
       return { success: true };
     } catch (err) {
@@ -50,6 +69,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginAsIntern = async (internId: string, pin: string) => {
     try {
       const res = await loginIntern(internId, pin);
+      if (res.user?.photoUrl) {
+        saveInternPhotoUrl(res.user.id, res.user.photoUrl);
+      } else if (res.user) {
+        const cachedPhoto = getInternPhotoUrl(res.user.id);
+        if (cachedPhoto) {
+          res.user.photoUrl = cachedPhoto;
+        }
+      }
       setUser(res.user);
       return { success: true };
     } catch (err) {
@@ -60,6 +87,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginAsAdmin = async (email: string, password: string) => {
     try {
       const res = await loginAdmin(email, password);
+      if (res.user?.photoUrl) {
+        saveInternPhotoUrl(res.user.id, res.user.photoUrl);
+      } else if (res.user) {
+        const cachedPhoto = getInternPhotoUrl(res.user.id);
+        if (cachedPhoto) {
+          res.user.photoUrl = cachedPhoto;
+        }
+      }
       setUser(res.user);
       return { success: true };
     } catch (err) {

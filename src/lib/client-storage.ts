@@ -8,6 +8,8 @@ export interface CachedAttendance {
   out?: string;
   remarks?: string;
   status?: string;
+  photoUrl?: string;
+  checkOutPhotoUrl?: string;
   updatedAt?: string;
 }
 
@@ -119,6 +121,27 @@ export function saveSelectedOffice(internId: string, locationId: string): void {
  */
 export function getSelectedOffice(internId: string): string | null {
   return getItem(`${STORAGE_PREFIX}selected_office_${internId}`);
+}
+
+/**
+ * Persists verified profile photo URL for an intern to avoid flashing initials offline.
+ */
+export function saveInternPhotoUrl(internId: string, photoUrl: string): void {
+  setItem(`${STORAGE_PREFIX}photo_${internId}`, photoUrl);
+}
+
+/**
+ * Retrieves cached verified profile photo URL for an intern or null.
+ */
+export function getInternPhotoUrl(internId: string): string | null {
+  return getItem(`${STORAGE_PREFIX}photo_${internId}`);
+}
+
+/**
+ * Removes cached verified photo URL for an intern.
+ */
+export function removeInternPhotoUrl(internId: string): void {
+  removeItem(`${STORAGE_PREFIX}photo_${internId}`);
 }
 
 /**

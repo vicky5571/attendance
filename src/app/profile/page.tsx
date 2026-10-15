@@ -193,8 +193,23 @@ export default function ProfilePage() {
 
         {/* 1. Header Card: Foto + Nama + Status / Posisi */}
         <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-slate-100 flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left relative overflow-hidden">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#ED0278] to-[#FF4B98] flex items-center justify-center text-white font-black text-3xl shadow-lg shadow-pink-500/20 shrink-0">
-            {displayName.charAt(0)}
+          <div className="flex flex-col items-center gap-1.5 shrink-0">
+            {internProfile?.photoUrl || user?.photoUrl ? (
+              <img
+                src={internProfile?.photoUrl || user?.photoUrl}
+                alt={displayName}
+                className="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-lg shadow-pink-500/20"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#ED0278] to-[#FF4B98] flex items-center justify-center text-white font-black text-3xl shadow-lg shadow-pink-500/20 shrink-0">
+                {displayName.charAt(0)}
+              </div>
+            )}
+            {(internProfile?.photoUrl || user?.photoUrl) && (
+              <span className="text-[9px] font-black uppercase tracking-wider text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full border border-pink-200">
+                Foto Terverifikasi Absensi
+              </span>
+            )}
           </div>
 
           <div className="flex-1 min-w-0">

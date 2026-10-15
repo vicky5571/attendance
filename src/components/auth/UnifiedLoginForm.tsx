@@ -56,10 +56,10 @@ export function UnifiedLoginForm({ onSuccess }: UnifiedLoginFormProps) {
         </div>
       )}
 
-      {/* Email Input */}
+      {/* Identifier (Username / ID / Email) Input */}
       <div className="flex flex-col gap-1.5 text-left">
         <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center justify-between">
-          <span>Email Korporat / Kampus</span>
+          <span>Username, ID Magang, atau Email</span>
           <span className="text-[10px] font-semibold text-pink-600">Wajib</span>
         </label>
         <div className="relative group">
@@ -69,8 +69,8 @@ export function UnifiedLoginForm({ onSuccess }: UnifiedLoginFormProps) {
             </svg>
           </div>
           <input
-            type="email"
-            autoComplete="email"
+            type="text"
+            autoComplete="username"
             required
             value={email}
             onChange={(e) => {
@@ -78,7 +78,7 @@ export function UnifiedLoginForm({ onSuccess }: UnifiedLoginFormProps) {
               setActivePreset(null);
               setErrorMsg('');
             }}
-            placeholder="nama@ioh.co.id"
+            placeholder="intern-sarah, admin, atau sarah@ioh.co.id"
             className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200/90 bg-slate-50/70 text-slate-900 text-xs font-semibold placeholder:text-slate-400 focus:outline-none focus:border-[#ED0278] focus:bg-white focus:ring-4 focus:ring-pink-500/10 transition-all shadow-xs"
           />
         </div>
