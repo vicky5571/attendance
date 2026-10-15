@@ -70,17 +70,6 @@ export function Header({ internName, waStatus, onOpenWaModal }: HeaderProps) {
       {isAuthenticated && user && (
         <div className="pt-2.5 border-t border-slate-100/90 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2 min-w-0 pr-2">
-            {user.role !== 'ADMIN' && (
-              <span
-                className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 ${
-                  user.role === 'SUPERVISOR'
-                    ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                    : 'bg-[#ED0278]/10 text-[#ED0278] border border-[#ED0278]/20'
-                }`}
-              >
-                {user.role === 'SUPERVISOR' ? 'SUPERVISOR' : 'MAGANG'}
-              </span>
-            )}
             <span className="font-extrabold text-slate-800 truncate text-[11px]">
               {user.name}
             </span>

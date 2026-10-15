@@ -454,7 +454,7 @@ export default function AttendancePage() {
       )}
 
       {/* Main Container Wrapper */}
-      <div className="w-full max-w-md flex flex-col gap-4">
+      <div className="w-full max-w-md flex flex-col gap-4 pb-24">
         {/* Header App with Session Badge & Logout */}
         <Header
           internName={activeIntern?.namaLengkap || user.name}

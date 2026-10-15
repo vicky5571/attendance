@@ -182,7 +182,7 @@ export default function ProfilePage() {
         </div>
       )}
 
-      <div className="w-full max-w-lg flex flex-col gap-4 pb-12">
+      <div className="w-full max-w-lg flex flex-col gap-4 pb-24">
         <div className="flex items-center justify-between bg-white rounded-3xl p-4 shadow-xs border border-slate-100">
           <Link
             href="/"
