@@ -147,7 +147,7 @@ export function UnifiedLoginForm({ onSuccess }: UnifiedLoginFormProps) {
           </>
         ) : (
           <>
-            <span>Masuk ke Dashboard Presensi</span>
+            <span>Masuk ke Akun</span>
             <svg
               className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1"
               fill="none"
