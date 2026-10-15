@@ -198,7 +198,7 @@ export function InternFormFields({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1 text-left">
+          <div className="flex flex-col gap-1 text-left col-span-1 sm:col-span-2">
             <label className="text-[11px] font-bold text-slate-600">
               Divisi Kerja <span className="text-pink-600">*</span>
             </label>
@@ -213,7 +213,8 @@ export function InternFormFields({
             />
           </div>
 
-          <div className="flex flex-col gap-1 text-left relative" ref={dropdownRef}>
+          {/* Hub / Kantor Penempatan - 2 Colspan directly below Divisi Kerja */}
+          <div className="flex flex-col gap-1 text-left relative col-span-1 sm:col-span-2" ref={dropdownRef}>
             <label className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
               <span>
                 Hub / Kantor Penempatan <span className="text-pink-600">*</span>
