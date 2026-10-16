@@ -3,43 +3,61 @@
 import React, { useState, useEffect } from 'react';
 
 export function SplashScreen() {
-  const [isVisible, setIsVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
-    // Only run in browser environment
+    // If running outside browser, exit
     if (typeof window === 'undefined') return;
 
     // Check if splash screen has already been shown in this browser session
-    const hasShown = sessionStorage.getItem('ioh_splash_shown');
-
-    if (!hasShown) {
-      setIsVisible(true);
-      sessionStorage.setItem('ioh_splash_shown', 'true');
-
-      // Start graceful fade-out transition at 900ms
-      const fadeTimer = setTimeout(() => {
-        setIsFadingOut(true);
-      }, 900);
-
-      // Unmount completely from DOM at 1300ms
-      const hideTimer = setTimeout(() => {
-        setIsVisible(false);
-      }, 1300);
-
-      return () => {
-        clearTimeout(fadeTimer);
-        clearTimeout(hideTimer);
-      };
+    try {
+      if (sessionStorage.getItem('ioh_splash_shown')) {
+        setIsDismissed(true);
+        return;
+      }
+    } catch {
+      // In case sessionStorage is blocked
+      setIsDismissed(true);
+      return;
     }
+
+    setMounted(true);
+
+    // Fade out after 1000ms
+    const fadeTimer = setTimeout(() => {
+      setIsFadingOut(true);
+    }, 1000);
+
+    // Fully dismiss and mark shown at 1400ms
+    const hideTimer = setTimeout(() => {
+      setIsDismissed(true);
+      try {
+        sessionStorage.setItem('ioh_splash_shown', 'true');
+      } catch {}
+    }, 1400);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(hideTimer);
+    };
   }, []);
 
-  if (!isVisible) return null;
+  const handleManualDismiss = () => {
+    setIsDismissed(true);
+    try {
+      sessionStorage.setItem('ioh_splash_shown', 'true');
+    } catch {}
+  };
+
+  if (isDismissed || !mounted) return null;
 
   return (
     <div
+      onClick={handleManualDismiss}
       aria-hidden={isFadingOut}
-      className={`fixed inset-0 z-50 bg-white flex flex-col items-center justify-between p-8 transition-opacity duration-500 ease-out select-none ${
+      className={`fixed inset-0 z-50 bg-white flex flex-col items-center justify-between p-8 transition-opacity duration-500 ease-out select-none cursor-pointer ${
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
