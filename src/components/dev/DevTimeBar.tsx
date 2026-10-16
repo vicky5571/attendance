@@ -67,7 +67,7 @@ export function DevTimeBar({
   return (
     <>
       {/* Floating Trigger Pill (Fixed Bottom Right, does NOT break page layout) */}
-      <div className="fixed bottom-5 right-5 z-40">
+      <div className="fixed bottom-20 right-4 z-40">
         <button
           type="button"
           onClick={() => setIsOpen(true)}

@@ -39,7 +39,7 @@ export default function CatatanPresensiPage() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-slate-900 flex flex-col items-center p-3 sm:p-6 font-sans">
-      <div className="w-full max-w-4xl flex flex-col gap-4 pb-12">
+      <div className="w-full max-w-4xl flex flex-col gap-4 pb-24">
         {/* Navigation Bar */}
         <div className="flex items-center justify-between bg-white rounded-3xl p-4 shadow-xs border border-slate-100">
           <Link

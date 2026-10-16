@@ -282,6 +282,37 @@ export default function AttendancePage() {
     setSelfieModalOpen(true);
   };
 
+  const handleDirectPunchTrigger = () => {
+    if (records.in && records.out) {
+      notify('Presensi hari ini sudah lengkap (Masuk & Pulang)', 'success');
+      return;
+    }
+    const type = !records.in ? 'check-in' : 'check-out';
+    initiateAttendance(type);
+  };
+
+  useEffect(() => {
+    const onPunchEvent = () => {
+      handleDirectPunchTrigger();
+    };
+    window.addEventListener('trigger-attendance-punch', onPunchEvent);
+
+    // Auto-trigger if redirected from another page via bottom bar Absensi FAB
+    if (typeof window !== 'undefined') {
+      const autoTrigger = sessionStorage.getItem('auto_trigger_punch');
+      if (autoTrigger === 'true') {
+        sessionStorage.removeItem('auto_trigger_punch');
+        setTimeout(() => {
+          handleDirectPunchTrigger();
+        }, 350);
+      }
+    }
+
+    return () => {
+      window.removeEventListener('trigger-attendance-punch', onPunchEvent);
+    };
+  }, [records.in, records.out, coords, isWithin, maxRadius]);
+
   const handleSelfieCaptured = async (base64Image: string) => {
     if (!currentInternId || !pendingActionType) return;
     setIsUploadingSelfie(true);
@@ -454,7 +485,7 @@ export default function AttendancePage() {
       )}
 
       {/* Main Container Wrapper */}
-      <div className="w-full max-w-md flex flex-col gap-4">
+      <div className="w-full max-w-md flex flex-col gap-4 pb-24">
         {/* Header App with Session Badge & Logout */}
         <Header
           internName={activeIntern?.namaLengkap || user.name}
