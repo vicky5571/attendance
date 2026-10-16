@@ -469,13 +469,13 @@ export default function AttendancePage() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-slate-900 flex flex-col items-center p-4 sm:p-6 font-sans">
-      {/* Toast Notification */}
+      {/* Toast Notification (Highest z-index to float over modal backdrops) */}
       {toast && (
         <div
-          className={`fixed top-4 z-50 px-4 py-2.5 rounded-full text-xs font-bold shadow-lg transition-all animate-bounce border ${
+          className={`fixed top-5 z-[9999] px-5 py-3 rounded-2xl text-xs font-black shadow-2xl transition-all animate-bounce border max-w-[90vw] text-center ${
             toast.type === 'success'
-              ? 'bg-emerald-500 text-white border-emerald-400'
-              : 'bg-rose-500 text-white border-rose-400'
+              ? 'bg-emerald-500 text-white border-emerald-400 shadow-emerald-500/30'
+              : 'bg-rose-500 text-white border-rose-400 shadow-rose-500/30'
           }`}
         >
           {toast.msg}
