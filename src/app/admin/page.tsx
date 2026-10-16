@@ -50,6 +50,42 @@ export default function AdminDashboardPage() {
     setTimeout(() => setToast(null), 3500);
   };
 
+  // Supervisor / Atasan Email State (Managed in Database)
+  const [supervisorEmailInput, setSupervisorEmailInput] = useState('');
+  const [isSavingSupervisorEmail, setIsSavingSupervisorEmail] = useState(false);
+
+  const fetchOfficeConfig = async () => {
+    try {
+      const res = await fetch('/api/config/office');
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.emailAtasan) {
+          setSupervisorEmailInput(data.emailAtasan);
+        }
+      }
+    } catch {}
+  };
+
+  const handleSaveSupervisorEmail = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsSavingSupervisorEmail(true);
+    try {
+      const res = await fetch('/api/config/office', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailAtasan: supervisorEmailInput.trim() }),
+      });
+      if (res.ok) {
+        notify('Email atasan berhasil disimpan ke database!', 'success');
+      } else {
+        notify('Gagal menyimpan email atasan', 'error');
+      }
+    } catch {
+      notify('Koneksi server gagal', 'error');
+    }
+    setIsSavingSupervisorEmail(false);
+  };
+
   // Mentor assignment modal state
   const [editingMentorIntern, setEditingMentorIntern] = useState<InternProfile | null>(null);
   const [mentorForm, setMentorForm] = useState({ namaMentor: '', emailMentor: '' });
@@ -146,6 +182,7 @@ export default function AdminDashboardPage() {
       fetchInterns();
       fetchRequests();
       fetchLocations();
+      fetchOfficeConfig();
       if (recapDate) fetchRecap(recapDate);
     }
   }, [isAuthenticated, user?.role]);
@@ -658,7 +695,39 @@ export default function AdminDashboardPage() {
                 </h3>
               </div>
               <p className="text-xs text-slate-400">
-                Kirim rekap absensi harian ke WhatsApp Group & Email Atasan
+                Kirim rekap absensi harian ke WhatsApp Group &amp; Email Atasan
+              </p>
+            </div>
+
+            {/* Email Atasan / Supervisor Setting (Database Managed) */}
+            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                  Email Atasan / Supervisor
+                </span>
+                <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                  Database
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="email"
+                  value={supervisorEmailInput}
+                  onChange={(e) => setSupervisorEmailInput(e.target.value)}
+                  placeholder="cth. supervisor.magang@indosat.com"
+                  className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#ED0278] transition shadow-2xs"
+                />
+                <button
+                  type="button"
+                  disabled={isSavingSupervisorEmail}
+                  onClick={handleSaveSupervisorEmail}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold transition shadow-2xs cursor-pointer disabled:opacity-50 shrink-0"
+                >
+                  {isSavingSupervisorEmail ? 'Menyimpan...' : 'Simpan'}
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-400 leading-tight">
+                Ganti email atasan kapan saja di sini tanpa perlu mengubah environment variable di Vercel.
               </p>
             </div>
 
