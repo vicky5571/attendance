@@ -8,6 +8,9 @@ import {
 } from '../../../../lib/db/requests-repo.ts';
 import type { AttendanceRequest, LeaveType, RequestStatus } from '../../../../types/index.ts';
 
+import { isSupabaseConfigured } from '../../../../lib/supabase/admin.ts';
+import { getInternFromSupabase } from '../../../../lib/db/supabase-repo.ts';
+
 const VALID_LEAVE_TYPES: LeaveType[] = ['WFH', 'SAKIT', 'IZIN', 'DISPENSASI', 'OFF_SITE'];
 
 export async function POST(req: Request) {
@@ -31,8 +34,12 @@ export async function POST(req: Request) {
 
     const db = getDatabase();
 
-    // Verify intern exists
-    const intern = getIntern(db, internId);
+    // Verify intern exists (Supabase first, SQLite fallback)
+    let intern = isSupabaseConfigured() ? await getInternFromSupabase(internId) : null;
+    if (!intern) {
+      intern = getIntern(db, internId);
+    }
+
     if (!intern) {
       return Response.json(
         { error: `Intern dengan ID '${internId}' tidak ditemukan` },

@@ -10,6 +10,9 @@ import {
 import { enforceInternIdentity } from '../../../../lib/auth-guard.ts';
 import type { RelocationRequest, RelocationStatus } from '../../../../types/index.ts';
 
+import { isSupabaseConfigured } from '../../../../lib/supabase/admin.ts';
+import { getInternFromSupabase, listOfficeLocationsFromSupabase } from '../../../../lib/db/supabase-repo.ts';
+
 interface RelocationPayload {
   internId: string;
   currentLocationId: string;
@@ -51,8 +54,12 @@ export async function POST(req: Request) {
       return identityCheck.errorResponse;
     }
 
-    // Verify intern exists
-    const intern = getIntern(db, body.internId);
+    // Verify intern exists (Supabase first, SQLite fallback)
+    let intern = isSupabaseConfigured() ? await getInternFromSupabase(body.internId) : null;
+    if (!intern) {
+      intern = getIntern(db, body.internId);
+    }
+
     if (!intern) {
       return Response.json(
         { error: `Peserta magang dengan ID '${body.internId}' tidak ditemukan` },

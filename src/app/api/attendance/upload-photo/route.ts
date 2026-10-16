@@ -2,6 +2,8 @@ import { uploadImageFile } from '../../../../lib/storage/service.ts';
 import { getDatabase } from '../../../../lib/db/client.ts';
 import { getIntern } from '../../../../lib/db/repo.ts';
 import { enforceInternIdentity } from '../../../../lib/auth-guard.ts';
+import { isSupabaseConfigured } from '../../../../lib/supabase/admin.ts';
+import { getInternFromSupabase } from '../../../../lib/db/supabase-repo.ts';
 
 const MAX_IMAGE_BYTES = 3 * 1024 * 1024; // 3MB limit
 const ALLOWED_MIME_TYPES: Record<string, string> = {
@@ -30,8 +32,12 @@ export async function POST(req: Request) {
       return identityCheck.errorResponse;
     }
 
-    // Verify intern exists
-    const intern = getIntern(db, internId);
+    // Verify intern exists (Supabase first, SQLite fallback)
+    let intern = isSupabaseConfigured() ? await getInternFromSupabase(internId) : null;
+    if (!intern) {
+      intern = getIntern(db, internId);
+    }
+
     if (!intern) {
       return Response.json(
         { error: `Peserta magang dengan ID '${internId}' tidak ditemukan` },
