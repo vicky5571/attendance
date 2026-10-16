@@ -60,7 +60,7 @@ export default function LoginPage() {
               href="/register"
               className="font-bold text-[#ED0278] hover:text-[#c40062] transition-colors underline decoration-pink-300 underline-offset-2"
             >
-              Daftar Akun &amp; Biometrik
+              Daftar Akun
             </Link>
           </p>
         </div>
