@@ -33,12 +33,35 @@ export async function uploadImageFile(
     try {
       const supabase = await getSupabaseAdmin();
       if (supabase) {
-        const { data, error } = await supabase.storage
+        let { data, error } = await supabase.storage
           .from(folder)
           .upload(filename, buffer, {
             contentType: mimeType,
             upsert: true,
           });
+
+        // If bucket does not exist, attempt to auto-create public bucket and retry upload
+        if (error && (error.message?.toLowerCase().includes('not found') || error.message?.toLowerCase().includes('bucket'))) {
+          try {
+            const { error: createError } = await supabase.storage.createBucket(folder, {
+              public: true,
+              fileSizeLimit: 5 * 1024 * 1024,
+            });
+
+            if (!createError) {
+              const retry = await supabase.storage
+                .from(folder)
+                .upload(filename, buffer, {
+                  contentType: mimeType,
+                  upsert: true,
+                });
+              data = retry.data;
+              error = retry.error;
+            }
+          } catch (createErr) {
+            console.warn(`[Supabase Storage] Auto-create bucket '${folder}' failed:`, createErr);
+          }
+        }
 
         if (!error && data) {
           const { data: publicData } = supabase.storage.from(folder).getPublicUrl(filename);
@@ -48,23 +71,37 @@ export async function uploadImageFile(
             storageProvider: 'supabase',
           };
         } else if (error) {
-          console.warn(`[Supabase Storage] Upload to '${folder}' failed, falling back to local:`, error.message);
+          console.warn(`[Supabase Storage] Upload to '${folder}' failed, falling back:`, error.message);
         }
       }
     } catch (err) {
-      console.warn(`[Supabase Storage] Exception during upload, falling back to local:`, err);
+      console.warn(`[Supabase Storage] Exception during upload, falling back:`, err);
     }
   }
 
-  // Local filesystem fallback (ephemeral in serverless, persistent in local dev/tests)
-  const targetDir = join(process.cwd(), 'public', 'uploads', folder);
-  await mkdir(targetDir, { recursive: true });
-  const filePath = join(targetDir, filename);
+  // Local filesystem fallback (only when NOT running in Vercel/serverless read-only container)
+  if (!process.env.VERCEL) {
+    try {
+      const targetDir = join(process.cwd(), 'public', 'uploads', folder);
+      await mkdir(targetDir, { recursive: true });
+      const filePath = join(targetDir, filename);
 
-  await writeFile(filePath, buffer);
+      await writeFile(filePath, buffer);
 
+      return {
+        url: `/uploads/${folder}/${filename}`,
+        filename,
+        storageProvider: 'local',
+      };
+    } catch (fsErr) {
+      console.warn(`[Storage Service] Local disk write failed:`, fsErr);
+    }
+  }
+
+  // Resilient Data URI fallback for Vercel / Serverless read-only environments
+  const dataUri = `data:${mimeType};base64,${buffer.toString('base64')}`;
   return {
-    url: `/uploads/${folder}/${filename}`,
+    url: dataUri,
     filename,
     storageProvider: 'local',
   };
