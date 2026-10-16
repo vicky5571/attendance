@@ -95,13 +95,13 @@ export async function dispatchEmailRecap(
   let sentCount = 0;
   const errors: string[] = [];
 
-  // 1. Dispatch global recap to supervisor
-  if (supervisorEmail) {
+  // 1. Dispatch global recap to supervisor (optional)
+  if (supervisorEmail && supervisorEmail.trim() !== '') {
     try {
       const globalHtml = generateRecapHtmlTable(summary);
       await transporter.sendMail({
         from: `"Indosat Attendance PWA" <${sender}>`,
-        to: supervisorEmail,
+        to: supervisorEmail.trim(),
         subject: `[Rekap Presensi Magang] ${summary.date} - Seluruh Divisi`,
         html: globalHtml,
       });

@@ -24,7 +24,7 @@ const DEFAULT_OFFICE_CONFIG: OfficeConfig = {
   maxRadiusMeters: 50,
   workStartTime: '08:00',
   workEndTime: '17:00',
-  emailAtasan: process.env.EMAIL_ATASAN || process.env.SMTP_USER || '',
+  emailAtasan: process.env.EMAIL_ATASAN || '',
 };
 
 export async function GET(request: Request) {
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     if (!config) {
       config = {
         ...DEFAULT_OFFICE_CONFIG,
-        emailAtasan: process.env.EMAIL_ATASAN || process.env.SMTP_USER || '',
+        emailAtasan: process.env.EMAIL_ATASAN || '',
       };
     }
 
