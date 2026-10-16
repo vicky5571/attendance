@@ -164,7 +164,8 @@ export function aggregateDailyRecap(db: DatabaseSync, date: string): DailyRecapS
  * Aggregates daily recap asynchronously using Supabase Postgres storage.
  */
 export async function aggregateDailyRecapFromSupabase(date: string): Promise<DailyRecapSummary> {
-  const activeInterns = await listInternsFromSupabase('ACTIVE');
+  const allInterns = await listInternsFromSupabase();
+  const activeInterns = allInterns.filter((i) => !i.status || i.status.toUpperCase() !== 'COMPLETED');
   const logs = await listAttendanceByDateFromSupabase(date);
   const approvedRequests = await listApprovedRequestsByDateFromSupabase(date);
   return buildDailyRecapSummary(activeInterns, logs, approvedRequests, date);
@@ -243,26 +244,30 @@ export function formatMentorGroupRecap(summary: DailyRecapSummary): string {
  * Generates an HTML recap table suitable for email digest delivery.
  */
 export function generateRecapHtmlTable(summary: DailyRecapSummary, filterMentorEmail?: string): string {
-  const items = filterMentorEmail
-    ? summary.items.filter((i) => i.emailMentor.toLowerCase() === filterMentorEmail.toLowerCase())
+  const normalizedFilter = filterMentorEmail?.trim().toLowerCase();
+  const items = normalizedFilter
+    ? summary.items.filter((i) => (i.emailMentor || '').trim().toLowerCase() === normalizedFilter)
     : summary.items;
 
-  const rows = items
-    .map((item) => {
-      const statusBadge =
-        item.status === 'ABSENT'
-          ? `<span style="color: #ef4444; font-weight: bold;">TIDAK HADIR</span>`
-          : item.status === 'WFH'
-          ? `<span style="color: #0284c7; font-weight: bold;">WFH</span>`
-          : item.status === 'SAKIT'
-          ? `<span style="color: #d97706; font-weight: bold;">SAKIT</span>`
-          : item.status === 'IZIN' || item.status === 'DISPENSASI'
-          ? `<span style="color: #7c3aed; font-weight: bold;">IZIN</span>`
-          : item.status === 'LATE'
-          ? `<span style="color: #f59e0b; font-weight: bold;">TERLAMBAT</span>`
-          : `<span style="color: #10b981; font-weight: bold;">HADIR</span>`;
+  const rows =
+    items.length === 0
+      ? `<tr><td colspan="6" style="padding: 24px 12px; text-align: center; color: #6b7280; font-style: italic; background-color: #fafafa;">Tidak ada catatan peserta magang pada rekap ini.</td></tr>`
+      : items
+          .map((item) => {
+            const statusBadge =
+              item.status === 'ABSENT'
+                ? `<span style="color: #ef4444; font-weight: bold;">TIDAK HADIR</span>`
+                : item.status === 'WFH'
+                ? `<span style="color: #0284c7; font-weight: bold;">WFH</span>`
+                : item.status === 'SAKIT'
+                ? `<span style="color: #d97706; font-weight: bold;">SAKIT</span>`
+                : item.status === 'IZIN' || item.status === 'DISPENSASI'
+                ? `<span style="color: #7c3aed; font-weight: bold;">IZIN</span>`
+                : item.status === 'LATE'
+                ? `<span style="color: #f59e0b; font-weight: bold;">TERLAMBAT</span>`
+                : `<span style="color: #10b981; font-weight: bold;">HADIR</span>`;
 
-      return `
+            return `
       <tr style="border-bottom: 1px solid #e5e7eb;">
         <td style="padding: 10px 12px; font-weight: 500;">${item.namaLengkap}</td>
         <td style="padding: 10px 12px; color: #4b5563;">${item.divisi}</td>
@@ -271,8 +276,8 @@ export function generateRecapHtmlTable(summary: DailyRecapSummary, filterMentorE
         <td style="padding: 10px 12px;">${statusBadge}</td>
         <td style="padding: 10px 12px; color: #6b7280; font-size: 13px;">${item.remarks || '-'}</td>
       </tr>`;
-    })
-    .join('');
+          })
+          .join('');
 
   return `
   <!DOCTYPE html>
