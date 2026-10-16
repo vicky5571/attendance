@@ -1,23 +1,29 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { listInterns, listAttendanceByDate } from '../db/repo.ts';
 import { listAttendanceRequests } from '../db/requests-repo.ts';
+import {
+  listInternsFromSupabase,
+  listAttendanceByDateFromSupabase,
+  listApprovedRequestsByDateFromSupabase,
+} from '../db/supabase-repo.ts';
 import type {
   DailyRecapSummary,
   RecapInternItem,
   DivisionBreakdown,
   AttendanceRecord,
   AttendanceRequest,
+  InternProfile,
 } from '../../types/index.ts';
 
 /**
- * Aggregates attendance records, identifies absentees among active interns,
- * integrates approved leave requests, and compiles division-level metrics.
+ * Builds a DailyRecapSummary domain entity from interns, attendance logs, and leave requests.
  */
-export function aggregateDailyRecap(db: DatabaseSync, date: string): DailyRecapSummary {
-  const activeInterns = listInterns(db, 'ACTIVE');
-  const logs = listAttendanceByDate(db, date);
-  const approvedRequests = listAttendanceRequests(db, { date, status: 'APPROVED' });
-
+export function buildDailyRecapSummary(
+  activeInterns: InternProfile[],
+  logs: AttendanceRecord[],
+  approvedRequests: AttendanceRequest[],
+  date: string
+): DailyRecapSummary {
   const logMap = new Map<string, AttendanceRecord>();
   for (const log of logs) {
     logMap.set(log.internId, log);
@@ -141,6 +147,27 @@ export function aggregateDailyRecap(db: DatabaseSync, date: string): DailyRecapS
     divisionBreakdowns: Array.from(divisionMap.values()),
     items,
   };
+}
+
+/**
+ * Aggregates attendance records, identifies absentees among active interns,
+ * integrates approved leave requests, and compiles division-level metrics (SQLite).
+ */
+export function aggregateDailyRecap(db: DatabaseSync, date: string): DailyRecapSummary {
+  const activeInterns = listInterns(db, 'ACTIVE');
+  const logs = listAttendanceByDate(db, date);
+  const approvedRequests = listAttendanceRequests(db, { date, status: 'APPROVED' });
+  return buildDailyRecapSummary(activeInterns, logs, approvedRequests, date);
+}
+
+/**
+ * Aggregates daily recap asynchronously using Supabase Postgres storage.
+ */
+export async function aggregateDailyRecapFromSupabase(date: string): Promise<DailyRecapSummary> {
+  const activeInterns = await listInternsFromSupabase('ACTIVE');
+  const logs = await listAttendanceByDateFromSupabase(date);
+  const approvedRequests = await listApprovedRequestsByDateFromSupabase(date);
+  return buildDailyRecapSummary(activeInterns, logs, approvedRequests, date);
 }
 
 /**

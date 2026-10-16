@@ -201,7 +201,14 @@ export default function AdminDashboardPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        notify(`Rekap harian berhasil disiarkan! WA: ${data.whatsapp?.sent || 0}, Email: ${data.email?.sent || 0}`, 'success');
+        if (data.email?.sent === 0 && data.email?.errors?.length > 0) {
+          notify(`Peringatan Email: ${data.email.errors[0]}`, 'error');
+        } else {
+          notify(
+            `Rekap harian berhasil disiarkan! WA: ${data.whatsapp?.sent || 0}, Email: ${data.email?.sent || 0}`,
+            'success'
+          );
+        }
         fetchRecap(recapDate);
       } else {
         notify(data.error || 'Gagal menyiarkan rekap', 'error');
@@ -327,8 +334,15 @@ export default function AdminDashboardPage() {
         {unassignedInterns.length > 0 && (
           <div className="bg-gradient-to-r from-amber-500/10 via-amber-50 to-orange-50 border border-amber-200/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
-                ⚠️
+              <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
               </div>
               <div>
                 <h4 className="text-xs font-black text-amber-950">
@@ -483,7 +497,7 @@ export default function AdminDashboardPage() {
                     : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
-                <span>⚠️ Butuh Mentor</span>
+                <span>Butuh Mentor</span>
                 <span
                   className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                     internFilter === 'UNASSIGNED'
@@ -510,7 +524,11 @@ export default function AdminDashboardPage() {
 
           {displayedInterns.length === 0 ? (
             <div className="py-12 flex flex-col items-center justify-center text-center p-4">
-              <span className="text-3xl mb-2">🎉</span>
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2 shadow-2xs">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
               <p className="text-xs font-bold text-slate-700">
                 {internFilter === 'UNASSIGNED'
                   ? 'Luar biasa! Semua peserta magang sudah memiliki mentor pembimbing.'

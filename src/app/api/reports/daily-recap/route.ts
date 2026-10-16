@@ -1,12 +1,16 @@
 import { getDatabase } from '../../../../lib/db/client.ts';
 import { getOfficeConfig } from '../../../../lib/db/repo.ts';
+import { isSupabaseConfigured } from '../../../../lib/supabase/admin.ts';
+import { getOfficeConfigFromSupabase } from '../../../../lib/db/supabase-repo.ts';
 import {
   aggregateDailyRecap,
+  aggregateDailyRecapFromSupabase,
   formatDailyInternsReport,
   formatMentorGroupRecap,
 } from '../../../../lib/services/recap.ts';
 import { sendWhatsAppMessage } from '../../../../lib/services/whatsapp.ts';
 import { dispatchEmailRecap } from '../../../../lib/services/email.ts';
+import type { DailyRecapSummary, OfficeConfig } from '../../../../types/index.ts';
 
 interface PostRecapBody {
   date?: string;
@@ -14,13 +18,27 @@ interface PostRecapBody {
   sendEmail?: boolean;
 }
 
+const DEFAULT_OFFICE_CONFIG: OfficeConfig = {
+  targetLatitude: -6.180495,
+  targetLongitude: 106.822769,
+  maxRadiusMeters: 50,
+  workStartTime: '08:00',
+  workEndTime: '17:00',
+  emailAtasan: process.env.EMAIL_ATASAN || process.env.SMTP_USER || '',
+};
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const dateParam = url.searchParams.get('date');
   const targetDate = dateParam || new Date().toISOString().split('T')[0];
 
-  const db = getDatabase();
-  const summary = aggregateDailyRecap(db, targetDate);
+  let summary: DailyRecapSummary;
+  if (isSupabaseConfigured()) {
+    summary = await aggregateDailyRecapFromSupabase(targetDate);
+  } else {
+    const db = getDatabase();
+    summary = aggregateDailyRecap(db, targetDate);
+  }
 
   return Response.json(summary);
 }
@@ -35,9 +53,25 @@ export async function POST(request: Request) {
     }
 
     const targetDate = body.date || new Date().toISOString().split('T')[0];
-    const db = getDatabase();
-    const config = getOfficeConfig(db);
-    const summary = aggregateDailyRecap(db, targetDate);
+    let summary: DailyRecapSummary;
+    let config: OfficeConfig | null = null;
+
+    if (isSupabaseConfigured()) {
+      config = await getOfficeConfigFromSupabase();
+      summary = await aggregateDailyRecapFromSupabase(targetDate);
+    } else {
+      const db = getDatabase();
+      config = getOfficeConfig(db);
+      summary = aggregateDailyRecap(db, targetDate);
+    }
+
+    // Fallback if config table is unseeded
+    if (!config) {
+      config = {
+        ...DEFAULT_OFFICE_CONFIG,
+        emailAtasan: process.env.EMAIL_ATASAN || process.env.SMTP_USER || '',
+      };
+    }
 
     const whatsappResult = { sent: 0, errors: [] as string[] };
     const emailResult = { sent: 0, errors: [] as string[] };
@@ -60,9 +94,9 @@ export async function POST(request: Request) {
     }
 
     // 2. Email Delivery Engine
-    if (body.sendEmail !== false && config) {
+    if (body.sendEmail !== false) {
       const emailRes = await dispatchEmailRecap(summary, {
-        supervisorEmail: config.emailAtasan,
+        supervisorEmail: config?.emailAtasan || process.env.EMAIL_ATASAN,
       });
       emailResult.sent = emailRes.sentCount;
       emailResult.errors = emailRes.errors;

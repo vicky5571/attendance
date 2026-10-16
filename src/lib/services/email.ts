@@ -68,6 +68,10 @@ export function createDefaultTransporter(): Transporter {
   });
 }
 
+export function isSmtpConfigured(): boolean {
+  return Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
+}
+
 /**
  * Dispatches attendance recap emails to supervisor and all distinct mentors.
  */
@@ -75,6 +79,15 @@ export async function dispatchEmailRecap(
   summary: DailyRecapSummary,
   options?: EmailDispatchOptions
 ): Promise<EmailDispatchResult> {
+  if (!options?.transporter && !isSmtpConfigured()) {
+    return {
+      sentCount: 0,
+      errors: [
+        'Kredensial SMTP (SMTP_USER & SMTP_PASS) belum disetel di Environment Variables (.env.local / Vercel). Email rekap tidak dapat dikirim ke inbox.',
+      ],
+    };
+  }
+
   const transporter = options?.transporter || createDefaultTransporter();
   const supervisorEmail = options?.supervisorEmail || process.env.EMAIL_ATASAN;
   const sender = process.env.SMTP_USER || 'no-reply@indosat.com';

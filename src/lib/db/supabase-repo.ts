@@ -7,6 +7,7 @@ import type {
   OfficeLocation,
   SessionRecord,
   AppUser,
+  AttendanceRequest,
 } from '../../types/index.ts';
 
 // ==============================================================================
@@ -431,6 +432,45 @@ export async function getInternByIdOrEmailFromSupabase(identifier: string): Prom
 
   if (error || !data) return null;
   return mapInternRow(data);
+}
+
+export async function listAttendanceByDateFromSupabase(date: string): Promise<AttendanceRecord[]> {
+  const supabase = await getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('attendance_logs')
+    .select('*')
+    .eq('date', date);
+
+  if (error || !data) return [];
+  return data.map(mapAttendanceRow);
+}
+
+export async function listApprovedRequestsByDateFromSupabase(date: string): Promise<AttendanceRequest[]> {
+  const supabase = await getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('attendance_requests')
+    .select('*')
+    .eq('date', date)
+    .eq('status', 'APPROVED');
+
+  if (error || !data) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return data.map((r: any) => ({
+    id: r.id,
+    internId: r.intern_id,
+    date: typeof r.date === 'string' ? r.date.split('T')[0] : r.date,
+    type: r.type,
+    reason: r.reason,
+    attachmentPath: r.attachment_path || undefined,
+    status: r.status,
+    reviewedBy: r.reviewed_by || undefined,
+    reviewedAt: r.reviewed_at || undefined,
+    createdAt: r.created_at,
+  }));
 }
 
 
