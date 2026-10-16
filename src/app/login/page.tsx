@@ -68,7 +68,7 @@ export default function LoginPage() {
         {/* Security Footer */}
         <div className="mt-6 pt-4 border-t border-slate-100 w-full text-center">
           <p className="text-[10px] text-slate-400 font-medium">
-            🔒 Dilindungi Autentikasi Sesi &amp; Geofencing Anti-Proxy
+            Dilindungi Autentikasi Sesi &amp; Geofencing Anti-Proxy
           </p>
         </div>
       </div>
