@@ -2,11 +2,12 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
-interface SelfieModalProps {
+export interface SelfieModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCapture: (base64Image: string) => void;
-  actionType?: 'check-in' | 'check-out';
+  actionType?: 'check-in' | 'check-out' | 'register';
+  title?: string;
   internName?: string;
   isUploading?: boolean;
 }
@@ -16,6 +17,7 @@ export function SelfieModal({
   onClose,
   onCapture,
   actionType = 'check-in',
+  title,
   internName,
   isUploading = false,
 }: SelfieModalProps) {
@@ -169,7 +171,7 @@ export function SelfieModal({
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-[#ED0278] animate-pulse" />
             <h2 className="text-sm font-black text-slate-900 tracking-tight">
-              Verifikasi Selfie {isCheckIn ? 'Check-In' : 'Check-Out'}
+              {title || (actionType === 'register' ? 'Verifikasi Biometrik Wajah' : `Verifikasi Selfie ${actionType === 'check-out' ? 'Check-Out' : 'Check-In'}`)}
             </h2>
           </div>
           <button
@@ -202,7 +204,13 @@ export function SelfieModal({
             /* Live WebRTC Camera Stream */
             <>
               <video
-                ref={videoRef}
+                ref={(el) => {
+                  videoRef.current = el;
+                  if (el && streamRef.current && el.srcObject !== streamRef.current) {
+                    el.srcObject = streamRef.current;
+                    el.play().catch(() => {});
+                  }
+                }}
                 autoPlay
                 playsInline
                 muted
