@@ -71,7 +71,7 @@ export function Header({ internName, waStatus, onOpenWaModal }: HeaderProps) {
         <div className="pt-2.5 border-t border-slate-100/90 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2 min-w-0 pr-2">
             <span className="font-extrabold text-slate-800 truncate text-[11px]">
-              {user.name}
+              Halo, {internName || user.name}!
             </span>
           </div>
 

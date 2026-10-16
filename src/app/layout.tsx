@@ -4,6 +4,7 @@ import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { AuthProvider } from "@/context/AuthContext";
 import { BottomNavBar } from "@/components/BottomNavBar";
+import { SplashScreen } from "@/components/SplashScreen";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -59,6 +60,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <ServiceWorkerRegister />
+        <SplashScreen />
         <AuthProvider>
           {children}
           <BottomNavBar />
