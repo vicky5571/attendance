@@ -45,7 +45,7 @@ export function BottomNavBar() {
   return (
     <nav
       aria-label="Navigasi Utama"
-      className="fixed bottom-0 left-0 right-0 z-40 bg-[#16181D]/95 backdrop-blur-xl border-t border-[#232730] shadow-[0_-8px_30px_rgba(0,0,0,0.45)]"
+      className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 shadow-[0_-4px_24px_rgba(0,0,0,0.06)]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="max-w-md mx-auto px-6 h-16 flex items-center justify-between relative">
@@ -57,8 +57,8 @@ export function BottomNavBar() {
           <div
             className={`w-14 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
               isHomeActive
-                ? 'bg-[#ED0278]/25 text-[#ED0278] ring-1 ring-[#ED0278]/40 shadow-sm shadow-[#ED0278]/20'
-                : 'text-slate-400 group-hover:text-slate-200'
+                ? 'bg-[#ED0278]/10 text-[#ED0278] ring-1 ring-[#ED0278]/25 shadow-xs shadow-pink-500/10'
+                : 'text-slate-400 group-hover:text-slate-600 group-hover:bg-slate-50'
             }`}
           >
             <svg
@@ -78,8 +78,8 @@ export function BottomNavBar() {
           <span
             className={`text-[11px] tracking-tight leading-tight mt-0.5 ${
               isHomeActive
-                ? 'font-black text-white'
-                : 'font-semibold text-slate-400 group-hover:text-slate-200'
+                ? 'font-black text-[#ED0278]'
+                : 'font-semibold text-slate-500 group-hover:text-slate-700'
             }`}
           >
             Beranda
@@ -94,9 +94,9 @@ export function BottomNavBar() {
           title="Lakukan Presensi Langsung"
         >
           {/* Outer Halo Notch Ring */}
-          <div className="p-1 rounded-[24px] bg-[#16181D] border-2 border-[#262A35] shadow-2xl">
+          <div className="p-1 rounded-[24px] bg-white border-2 border-slate-100 shadow-xl shadow-pink-500/10">
             {/* Inner Vibrant Indosat Magenta Capsule */}
-            <div className="w-15 h-10 sm:w-16 sm:h-11 rounded-[20px] bg-gradient-to-tr from-[#ED0278] via-[#FF2686] to-[#FF4B98] flex items-center justify-center text-white shadow-lg shadow-[#ED0278]/40 group-hover:shadow-[#ED0278]/60 group-hover:scale-105 transition-all duration-200">
+            <div className="w-15 h-10 sm:w-16 sm:h-11 rounded-[20px] bg-gradient-to-tr from-[#ED0278] via-[#FF2686] to-[#FF4B98] flex items-center justify-center text-white shadow-md shadow-[#ED0278]/30 group-hover:shadow-lg group-hover:shadow-[#ED0278]/50 group-hover:scale-105 transition-all duration-200">
               {/* GoPay-Style Scanner / Punch Icon */}
               <svg
                 className="w-6 h-6 text-white"
@@ -113,7 +113,7 @@ export function BottomNavBar() {
               </svg>
             </div>
           </div>
-          <span className="text-[11px] tracking-tight leading-tight mt-0.5 font-bold text-slate-200 group-hover:text-white">
+          <span className="text-[11px] tracking-tight leading-tight mt-0.5 font-bold text-slate-700 group-hover:text-[#ED0278]">
             Absensi
           </span>
         </button>
@@ -126,8 +126,8 @@ export function BottomNavBar() {
           <div
             className={`w-14 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
               isProfilActive
-                ? 'bg-[#ED0278]/25 text-[#ED0278] ring-1 ring-[#ED0278]/40 shadow-sm shadow-[#ED0278]/20'
-                : 'text-slate-400 group-hover:text-slate-200'
+                ? 'bg-[#ED0278]/10 text-[#ED0278] ring-1 ring-[#ED0278]/25 shadow-xs shadow-pink-500/10'
+                : 'text-slate-400 group-hover:text-slate-600 group-hover:bg-slate-50'
             }`}
           >
             <svg
@@ -147,8 +147,8 @@ export function BottomNavBar() {
           <span
             className={`text-[11px] tracking-tight leading-tight mt-0.5 ${
               isProfilActive
-                ? 'font-black text-white'
-                : 'font-semibold text-slate-400 group-hover:text-slate-200'
+                ? 'font-black text-[#ED0278]'
+                : 'font-semibold text-slate-500 group-hover:text-slate-700'
             }`}
           >
             Profil
@@ -157,7 +157,7 @@ export function BottomNavBar() {
       </div>
 
       {/* iOS Home Indicator Bar */}
-      <div className="w-32 h-1 bg-slate-700/60 rounded-full mx-auto mt-0.5 mb-1" />
+      <div className="w-32 h-1 bg-slate-200 rounded-full mx-auto mt-0.5 mb-1" />
     </nav>
   );
 }
