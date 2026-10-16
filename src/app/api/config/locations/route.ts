@@ -5,15 +5,53 @@ import {
   createOfficeLocation,
   deleteOfficeLocation,
 } from '../../../../lib/db/locations-repo.ts';
+import { isSupabaseConfigured } from '../../../../lib/supabase/admin.ts';
+import {
+  listOfficeLocationsFromSupabase,
+  createOfficeLocationInSupabase,
+  deleteOfficeLocationInSupabase,
+} from '../../../../lib/db/supabase-repo.ts';
 import type { OfficeLocation } from '../../../../types/index.ts';
+
+export const DEFAULT_OFFICE_LOCATIONS: OfficeLocation[] = [
+  {
+    id: 'loc-kppti',
+    name: 'KPPTI Jakarta Pusat (HQ)',
+    address: 'Jl. Medan Merdeka Barat No. 21, Gambir, Jakarta Pusat',
+    latitude: -6.180495,
+    longitude: 106.822769,
+    maxRadiusMeters: 50,
+    isActive: true,
+  },
+  {
+    id: 'loc-bsd',
+    name: 'Gedung Indosat Serpong BSD',
+    address: 'BSD Green Office Park, Tangerang Selatan',
+    latitude: -6.30154,
+    longitude: 106.65217,
+    maxRadiusMeters: 75,
+    isActive: true,
+  },
+];
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const onlyActive = searchParams.get('active') === 'true';
 
-    const db = getDatabase();
-    const locations = listOfficeLocations(db, onlyActive);
+    let locations: OfficeLocation[] = [];
+    if (isSupabaseConfigured()) {
+      locations = await listOfficeLocationsFromSupabase(onlyActive);
+    }
+
+    if (locations.length === 0) {
+      const db = getDatabase();
+      locations = listOfficeLocations(db, onlyActive);
+    }
+
+    if (locations.length === 0) {
+      locations = DEFAULT_OFFICE_LOCATIONS;
+    }
 
     return Response.json({ locations }, { status: 200 });
   } catch (error) {
@@ -46,8 +84,14 @@ export async function POST(req: Request) {
       isActive: true,
     };
 
+    if (isSupabaseConfigured()) {
+      await createOfficeLocationInSupabase(newLocation);
+    }
+
     const db = getDatabase();
-    createOfficeLocation(db, newLocation);
+    try {
+      createOfficeLocation(db, newLocation);
+    } catch {}
 
     return Response.json(
       { message: 'Office location berhasil ditambahkan', location: newLocation },
@@ -73,15 +117,14 @@ export async function DELETE(req: Request) {
       );
     }
 
-    const db = getDatabase();
-    const deleted = deleteOfficeLocation(db, id);
-
-    if (!deleted) {
-      return Response.json(
-        { error: `Lokasi kantor dengan ID ${id} tidak ditemukan` },
-        { status: 404 }
-      );
+    if (isSupabaseConfigured()) {
+      await deleteOfficeLocationInSupabase(id);
     }
+
+    const db = getDatabase();
+    try {
+      deleteOfficeLocation(db, id);
+    } catch {}
 
     return Response.json(
       { message: 'Lokasi kantor berhasil dihapus' },

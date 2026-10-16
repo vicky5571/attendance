@@ -4,6 +4,11 @@ import { getDatabase } from '../../../../lib/db/client.ts';
 import { getInternByEmail, createIntern } from '../../../../lib/db/repo.ts';
 import { hashPassword } from '../../../../lib/auth.ts';
 import { detectFace } from '../../../../lib/services/face-detection.ts';
+import { isSupabaseConfigured } from '../../../../lib/supabase/admin.ts';
+import {
+  getInternByEmailFromSupabase,
+  createInternInSupabase,
+} from '../../../../lib/db/supabase-repo.ts';
 import type { InternProfile, InternRegistrationPayload } from '../../../../types/index.ts';
 
 const MAX_IMAGE_BYTES = 3 * 1024 * 1024; // 3MB limit
@@ -73,6 +78,16 @@ export async function POST(req: Request) {
     const db = getDatabase();
 
     // 3. Email Uniqueness Check
+    if (isSupabaseConfigured()) {
+      const existingInSupabase = await getInternByEmailFromSupabase(cleanEmail);
+      if (existingInSupabase) {
+        return Response.json(
+          { error: `Email '${cleanEmail}' sudah terdaftar dalam sistem` },
+          { status: 409 }
+        );
+      }
+    }
+
     const existingIntern = getInternByEmail(db, cleanEmail);
     if (existingIntern) {
       return Response.json(
@@ -150,7 +165,18 @@ export async function POST(req: Request) {
       photoUrl,
     };
 
-    createIntern(db, newIntern);
+    if (isSupabaseConfigured()) {
+      const savedToSupabase = await createInternInSupabase(newIntern);
+      if (!savedToSupabase) {
+        console.error('[Register API] Failed to save intern profile to Supabase');
+      }
+    }
+
+    try {
+      createIntern(db, newIntern);
+    } catch {
+      // Local SQLite fallback in case of read-only FS or memory mode
+    }
 
     return Response.json(
       {

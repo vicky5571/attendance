@@ -169,7 +169,12 @@ export async function createInternInSupabase(profile: InternProfile): Promise<bo
     photo_url: profile.photoUrl || null,
   });
 
-  return !error;
+  if (error) {
+    console.error('[Supabase] Failed to insert intern:', error);
+    return false;
+  }
+
+  return true;
 }
 
 export async function updateInternPhotoInSupabase(internId: string, photoUrl: string): Promise<boolean> {
@@ -241,7 +246,7 @@ export async function recordCheckOutInSupabase(
   internId: string,
   date: string,
   checkOutTime: string,
-  coords: Coordinates,
+  coords?: Coordinates,
   remarks?: string,
   photoUrl?: string
 ): Promise<boolean> {
@@ -250,9 +255,12 @@ export async function recordCheckOutInSupabase(
 
   const payload: Record<string, unknown> = {
     check_out_time: checkOutTime,
-    check_out_lat: coords.latitude,
-    check_out_lng: coords.longitude,
   };
+
+  if (coords) {
+    payload.check_out_lat = coords.latitude;
+    payload.check_out_lng = coords.longitude;
+  }
 
   if (remarks !== undefined) payload.remarks = remarks;
   if (photoUrl) payload.check_out_photo_url = photoUrl;
@@ -260,6 +268,27 @@ export async function recordCheckOutInSupabase(
   const { error } = await supabase
     .from('attendance_logs')
     .update(payload)
+    .eq('intern_id', internId)
+    .eq('date', date);
+
+  if (error) {
+    console.error('[Supabase] Failed to record check-out:', error);
+    return false;
+  }
+
+  return true;
+}
+
+export async function deleteAttendanceRecordInSupabase(
+  internId: string,
+  date: string
+): Promise<boolean> {
+  const supabase = await getSupabaseAdmin();
+  if (!supabase) return false;
+
+  const { error } = await supabase
+    .from('attendance_logs')
+    .delete()
     .eq('intern_id', internId)
     .eq('date', date);
 
@@ -278,6 +307,31 @@ export async function listOfficeLocationsFromSupabase(activeOnly = false): Promi
   const { data, error } = await query;
   if (error || !data) return [];
   return data.map(mapLocationRow);
+}
+
+export async function createOfficeLocationInSupabase(loc: OfficeLocation): Promise<boolean> {
+  const supabase = await getSupabaseAdmin();
+  if (!supabase) return false;
+
+  const { error } = await supabase.from('office_locations').upsert({
+    id: loc.id,
+    name: loc.name,
+    address: loc.address || null,
+    latitude: loc.latitude,
+    longitude: loc.longitude,
+    max_radius_meters: loc.maxRadiusMeters,
+    is_active: loc.isActive,
+  });
+
+  return !error;
+}
+
+export async function deleteOfficeLocationInSupabase(id: string): Promise<boolean> {
+  const supabase = await getSupabaseAdmin();
+  if (!supabase) return false;
+
+  const { error } = await supabase.from('office_locations').delete().eq('id', id);
+  return !error;
 }
 
 export async function findSessionByTokenInSupabase(token: string): Promise<SessionRecord | null> {
@@ -310,6 +364,14 @@ export async function createSessionInSupabase(session: SessionRecord): Promise<b
     created_at: session.createdAt,
   });
 
+  return !error;
+}
+
+export async function deleteSessionFromSupabase(token: string): Promise<boolean> {
+  const supabase = await getSupabaseAdmin();
+  if (!supabase) return false;
+
+  const { error } = await supabase.from('sessions').delete().eq('token', token);
   return !error;
 }
 

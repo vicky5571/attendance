@@ -1,7 +1,10 @@
 import { getDatabase } from '../../../../lib/db/client.ts';
 import { getAttendanceRecord, deleteAttendanceRecord } from '../../../../lib/db/repo.ts';
 import { isSupabaseConfigured } from '../../../../lib/supabase/admin.ts';
-import { getAttendanceRecordFromSupabase } from '../../../../lib/db/supabase-repo.ts';
+import {
+  getAttendanceRecordFromSupabase,
+  deleteAttendanceRecordInSupabase,
+} from '../../../../lib/db/supabase-repo.ts';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -44,8 +47,14 @@ export async function DELETE(request: Request) {
 
   const dateStr = dateParam || new Date().toISOString().split('T')[0];
 
-  const db = getDatabase();
-  deleteAttendanceRecord(db, internId, dateStr);
+  if (isSupabaseConfigured()) {
+    await deleteAttendanceRecordInSupabase(internId, dateStr);
+  }
+
+  try {
+    const db = getDatabase();
+    deleteAttendanceRecord(db, internId, dateStr);
+  } catch {}
 
   return Response.json({
     message: 'Attendance record reset successfully',

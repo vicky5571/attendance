@@ -1,5 +1,7 @@
 import { getDatabase } from '../../../../lib/db/client.ts';
 import { deleteSession } from '../../../../lib/db/auth-repo.ts';
+import { isSupabaseConfigured } from '../../../../lib/supabase/admin.ts';
+import { deleteSessionFromSupabase } from '../../../../lib/db/supabase-repo.ts';
 
 function extractToken(req: Request): string | null {
   const cookieHeader = req.headers.get('cookie');
@@ -23,8 +25,13 @@ export async function POST(req: Request) {
   try {
     const token = extractToken(req);
     if (token) {
-      const db = getDatabase();
-      deleteSession(db, token);
+      if (isSupabaseConfigured()) {
+        await deleteSessionFromSupabase(token);
+      }
+      try {
+        const db = getDatabase();
+        deleteSession(db, token);
+      } catch {}
     }
 
     return Response.json(

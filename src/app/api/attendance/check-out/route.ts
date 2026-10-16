@@ -92,7 +92,7 @@ export async function POST(request: Request) {
         ? { latitude: body.latitude, longitude: body.longitude }
         : undefined;
 
-    if (isSupabaseConfigured() && coords) {
+    if (isSupabaseConfigured()) {
       await recordCheckOutInSupabase(
         body.internId,
         dateStr,

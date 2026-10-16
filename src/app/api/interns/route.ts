@@ -1,7 +1,11 @@
 import { getDatabase } from '../../../lib/db/client.ts';
 import { getIntern, createIntern, listInterns, updateInternLocation } from '../../../lib/db/repo.ts';
 import { isSupabaseConfigured } from '../../../lib/supabase/admin.ts';
-import { listInternsFromSupabase } from '../../../lib/db/supabase-repo.ts';
+import {
+  listInternsFromSupabase,
+  createInternInSupabase,
+  getInternFromSupabase,
+} from '../../../lib/db/supabase-repo.ts';
 import type { InternProfile } from '../../../types/index.ts';
 
 export async function GET(request: Request) {
@@ -10,9 +14,7 @@ export async function GET(request: Request) {
 
   if (isSupabaseConfigured()) {
     const supabaseInterns = await listInternsFromSupabase(statusParam || undefined);
-    if (supabaseInterns.length > 0) {
-      return Response.json(supabaseInterns);
-    }
+    return Response.json(supabaseInterns);
   }
 
   const db = getDatabase();
@@ -41,16 +43,29 @@ export async function POST(request: Request) {
       );
     }
 
-    const db = getDatabase();
-    const existing = getIntern(db, body.id);
-    if (existing) {
-      return Response.json(
-        { error: `Intern with ID ${body.id} already exists` },
-        { status: 409 }
-      );
+    if (isSupabaseConfigured()) {
+      const existingInSupabase = await getInternFromSupabase(body.id);
+      if (existingInSupabase) {
+        return Response.json(
+          { error: `Intern with ID ${body.id} already exists` },
+          { status: 409 }
+        );
+      }
+      await createInternInSupabase(body);
     }
 
-    createIntern(db, body);
+    const db = getDatabase();
+    try {
+      const existing = getIntern(db, body.id);
+      if (existing && !isSupabaseConfigured()) {
+        return Response.json(
+          { error: `Intern with ID ${body.id} already exists` },
+          { status: 409 }
+        );
+      }
+      createIntern(db, body);
+    } catch {}
+
     return Response.json(body, { status: 201 });
   } catch {
     return Response.json({ error: 'Malformed JSON payload' }, { status: 400 });

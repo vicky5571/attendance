@@ -9,6 +9,27 @@ import { InternFormFields } from '@/components/register/InternFormFields';
 import { BiometricCameraCapture } from '@/components/register/BiometricCameraCapture';
 import { RegistrationSuccessCard } from '@/components/register/RegistrationSuccessCard';
 
+const DEFAULT_LOCATIONS: OfficeLocation[] = [
+  {
+    id: 'loc-kppti',
+    name: 'KPPTI Jakarta Pusat (HQ)',
+    address: 'Jl. Medan Merdeka Barat No. 21, Gambir, Jakarta Pusat',
+    latitude: -6.180495,
+    longitude: 106.822769,
+    maxRadiusMeters: 50,
+    isActive: true,
+  },
+  {
+    id: 'loc-bsd',
+    name: 'Gedung Indosat Serpong BSD',
+    address: 'BSD Green Office Park, Tangerang Selatan',
+    latitude: -6.30154,
+    longitude: 106.65217,
+    maxRadiusMeters: 75,
+    isActive: true,
+  },
+];
+
 export default function RegisterPage() {
   const router = useRouter();
 
@@ -25,7 +46,7 @@ export default function RegisterPage() {
     assignedLocationId: 'loc-kppti',
   });
 
-  const [locations, setLocations] = useState<OfficeLocation[]>([]);
+  const [locations, setLocations] = useState<OfficeLocation[]>(DEFAULT_LOCATIONS);
   const [facePhoto, setFacePhoto] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -45,30 +66,15 @@ export default function RegisterPage() {
           : Array.isArray(data?.locations)
           ? data.locations
           : [];
-        if (list.length > 0) {
-          setLocations(list);
-          setFormData((prev) => ({ ...prev, assignedLocationId: list[0].id }));
-        }
+        const activeLocations = list.length > 0 ? list : DEFAULT_LOCATIONS;
+        setLocations(activeLocations);
+        setFormData((prev) => {
+          const hasExisting = activeLocations.some((loc) => loc.id === prev.assignedLocationId);
+          return hasExisting ? prev : { ...prev, assignedLocationId: activeLocations[0].id };
+        });
       })
       .catch(() => {
-        setLocations([
-          {
-            id: 'loc-kppti',
-            name: 'KPPTI Jakarta Pusat (HQ)',
-            latitude: -6.180495,
-            longitude: 106.822769,
-            maxRadiusMeters: 50,
-            isActive: true,
-          },
-          {
-            id: 'loc-bsd',
-            name: 'Gedung Indosat Serpong BSD',
-            latitude: -6.30154,
-            longitude: 106.65217,
-            maxRadiusMeters: 75,
-            isActive: true,
-          },
-        ]);
+        setLocations(DEFAULT_LOCATIONS);
       });
   }, []);
 
