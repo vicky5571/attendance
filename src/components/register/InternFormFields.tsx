@@ -8,7 +8,7 @@ export interface InternFormFieldsProps {
     namaLengkap: string;
     email: string;
     password: string;
-    pin: string;
+    pin?: string;
     divisi: string;
     namaMentor: string;
     emailMentor: string;
@@ -133,23 +133,6 @@ export function InternFormFields({
                 </svg>
               </button>
             </div>
-          </div>
-
-          <div className="flex flex-col gap-1 text-left">
-            <label className="text-[11px] font-bold text-slate-600">
-              PIN Presensi (6 Digit) <span className="text-pink-600">*</span>
-            </label>
-            <input
-              type="password"
-              inputMode="numeric"
-              name="pin"
-              maxLength={6}
-              required
-              value={formData.pin}
-              onChange={onInputChange}
-              placeholder="6 Digit Angka"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 text-xs font-semibold placeholder:text-slate-400 focus:outline-none focus:border-[#ED0278] focus:ring-2 focus:ring-pink-500/10 transition-all tracking-widest shadow-xs"
-            />
           </div>
         </div>
       </div>

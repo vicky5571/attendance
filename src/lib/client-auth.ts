@@ -21,10 +21,15 @@ export async function loginWithCredentials(identifier: string, password: string)
   return data as AuthResponse;
 }
 
-export async function loginIntern(internId: string, pin: string): Promise<AuthResponse> {
+export async function loginIntern(
+  internId: string,
+  password?: string,
+  pin?: string
+): Promise<AuthResponse> {
   const payload: InternLoginPayload = {
     role: 'INTERN',
     internId,
+    password,
     pin,
   };
 
