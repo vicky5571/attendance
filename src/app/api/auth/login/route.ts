@@ -124,12 +124,19 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Intern Login Mode (ID + PIN)
+    // 1. Intern Login Mode (ID + Password or Legacy PIN)
     if (body.role === 'INTERN') {
-      const { internId, pin } = body;
-      if (!internId || !pin) {
+      const { internId, pin, password } = body as { internId?: string; pin?: string; password?: string };
+      if (!internId) {
         return Response.json(
-          { error: 'Field internId dan pin wajib diisi untuk login peserta magang' },
+          { error: 'Field internId wajib diisi untuk login peserta magang' },
+          { status: 400 }
+        );
+      }
+
+      if (!pin && !password) {
+        return Response.json(
+          { error: 'Password atau PIN wajib diisi untuk login peserta magang' },
           { status: 400 }
         );
       }
@@ -142,12 +149,22 @@ export async function POST(req: Request) {
         );
       }
 
-      // If intern has configured PIN, verify it
-      if (intern.pinHash && !verifyPin(pin, intern.pinHash)) {
-        return Response.json(
-          { error: 'PIN yang dimasukkan salah' },
-          { status: 401 }
-        );
+      // Password check takes priority
+      if (password) {
+        if (!intern.passwordHash || !verifyPassword(password, intern.passwordHash)) {
+          return Response.json(
+            { error: 'Password yang dimasukkan salah' },
+            { status: 401 }
+          );
+        }
+      } else if (pin) {
+        // Fallback for legacy PIN
+        if (intern.pinHash && !verifyPin(pin, intern.pinHash)) {
+          return Response.json(
+            { error: 'PIN yang dimasukkan salah' },
+            { status: 401 }
+          );
+        }
       }
 
       const token = generateSessionToken();

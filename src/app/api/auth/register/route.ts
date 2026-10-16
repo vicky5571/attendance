@@ -16,7 +16,6 @@ const ALLOWED_MIME_TYPES: Record<string, string> = {
 };
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PIN_REGEX = /^\d{6}$/;
 
 export async function POST(req: Request) {
   try {
@@ -45,7 +44,6 @@ export async function POST(req: Request) {
       !namaLengkap?.trim() ||
       !email?.trim() ||
       !password?.trim() ||
-      !pin?.trim() ||
       !divisi?.trim() ||
       !namaMentor?.trim() ||
       !emailMentor?.trim() ||
@@ -64,10 +62,6 @@ export async function POST(req: Request) {
     const cleanEmail = email.toLowerCase().trim();
     if (!EMAIL_REGEX.test(cleanEmail)) {
       return Response.json({ error: 'Format email tidak valid' }, { status: 400 });
-    }
-
-    if (!PIN_REGEX.test(pin.trim())) {
-      return Response.json({ error: 'PIN harus terdiri dari 6 digit angka' }, { status: 400 });
     }
 
     if (password.length < 6) {
@@ -156,7 +150,7 @@ export async function POST(req: Request) {
       jurusan: jurusan.trim(),
       periodeMagangSelesai: periodeMagangSelesai.trim(),
       status: 'ACTIVE',
-      pinHash: pin.trim(),
+      pinHash: pin?.trim() || undefined,
       email: cleanEmail,
       passwordHash,
       assignedLocationId: assignedLocationId || 'loc-kppti',

@@ -10,7 +10,6 @@ import {
   evaluateAttendanceRemarks,
   findMatchingLocation,
 } from '../../../../lib/geo.ts';
-import { verifyPin } from '../../../../lib/auth.ts';
 import { enforceInternIdentity } from '../../../../lib/auth-guard.ts';
 import { listOfficeLocations } from '../../../../lib/db/locations-repo.ts';
 import type { AttendanceRecord } from '../../../../types/index.ts';
@@ -55,16 +54,6 @@ export async function POST(request: Request) {
         { error: `Intern not found with ID: ${body.internId}` },
         { status: 404 }
       );
-    }
-
-    // 1b. Anti-Proxy PIN Verification Guard
-    if (intern.pinHash) {
-      if (!body.pin || !verifyPin(body.pin, intern.pinHash)) {
-        return Response.json(
-          { error: 'PIN autentikasi tidak valid atau belum diisi' },
-          { status: 401 }
-        );
-      }
     }
 
     // 2. Resolve date and time

@@ -24,10 +24,6 @@ export function validateRegistrationForm(
     return { isValid: false, error: 'Password minimal 6 karakter.' };
   }
 
-  if (!data.pin || !/^\d{6}$/.test(data.pin)) {
-    return { isValid: false, error: 'PIN Presensi harus berupa 6 digit angka.' };
-  }
-
   if (!data.divisi || !data.divisi.trim()) {
     return { isValid: false, error: 'Divisi magang wajib diisi.' };
   }

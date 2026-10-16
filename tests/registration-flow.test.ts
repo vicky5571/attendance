@@ -11,7 +11,6 @@ describe('Intern Registration Client Validation & Error Parser', () => {
     namaLengkap: 'Dimas Wicaksono',
     email: 'dimas.wicaksono@ioh.co.id',
     password: 'SecurePassword2026!',
-    pin: '654321',
     divisi: 'Cloud Infrastructure',
     namaMentor: 'Vicky Backend Lead',
     emailMentor: 'mentor.vicky@indosat.com',
@@ -47,13 +46,12 @@ describe('Intern Registration Client Validation & Error Parser', () => {
       assert.match(result.error || '', /password minimal 6/i);
     });
 
-    test('should reject non-6-digit PIN', () => {
-      const testCases = ['12345', '1234567', 'abcdef', '12345a', ''];
-      for (const pin of testCases) {
-        const result = validateRegistrationForm({ ...validPayload, pin });
-        assert.equal(result.isValid, false, `Failed to reject pin: ${pin}`);
-        assert.match(result.error || '', /6 digit angka/i);
-      }
+    test('should allow payload without PIN (PIN is not required)', () => {
+      const payloadWithoutPin = { ...validPayload };
+      delete payloadWithoutPin.pin;
+      const result = validateRegistrationForm(payloadWithoutPin);
+      assert.equal(result.isValid, true);
+      assert.equal(result.error, null);
     });
 
     test('should reject missing mentor name or invalid mentor email', () => {

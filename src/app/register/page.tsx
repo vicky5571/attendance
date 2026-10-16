@@ -75,11 +75,6 @@ export default function RegisterPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    if (name === 'pin') {
-      const sanitized = value.replace(/\D/g, '').slice(0, 6);
-      setFormData((prev) => ({ ...prev, pin: sanitized }));
-      return;
-    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 

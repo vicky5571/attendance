@@ -161,7 +161,8 @@ export interface SessionRecord {
 export interface InternLoginPayload {
   role: 'INTERN';
   internId: string;
-  pin: string;
+  pin?: string;
+  password?: string;
 }
 
 export interface AdminLoginPayload {
@@ -219,7 +220,7 @@ export interface InternRegistrationPayload {
   namaLengkap: string;
   email: string;
   password: string;
-  pin: string;
+  pin?: string;
   divisi: string;
   namaMentor: string;
   emailMentor: string;

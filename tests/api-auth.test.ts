@@ -36,6 +36,19 @@ describe('Auth REST APIs (/api/auth)', () => {
       assert.ok(setCookie.includes('HttpOnly'));
     });
 
+    it('should authenticate intern with password when role is INTERN without PIN', async () => {
+      const req = new Request('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: 'INTERN', internId: 'intern-sarah', password: 'InternIOH2026!' }),
+      });
+      const res = await loginRoute(req);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.user.id, 'intern-sarah');
+      assert.equal(data.user.role, 'INTERN');
+    });
+
     it('should reject intern login with invalid PIN with 401', async () => {
       const req = new Request('http://localhost:3000/api/auth/login', {
         method: 'POST',

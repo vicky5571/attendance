@@ -99,8 +99,8 @@ describe('Anti-Proxy PIN Authentication & Verification Layer', () => {
     });
   });
 
-  describe('Check-In & Check-Out Anti-Proxy Guards', () => {
-    it('should reject check-in when PIN is invalid for PIN-protected intern', async () => {
+  describe('Frictionless Check-In & Check-Out (No PIN Required)', () => {
+    it('should allow check-in without PIN even for intern with pinHash configured', async () => {
       const req = new Request('http://localhost:3000/api/attendance/check-in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -108,47 +108,43 @@ describe('Anti-Proxy PIN Authentication & Verification Layer', () => {
           internId: 'intern-pin',
           latitude: -6.180495,
           longitude: 106.822769,
-          pin: 'wrong-pin',
-        }),
-      });
-      const res = await checkInRoute(req);
-      assert.equal(res.status, 401);
-      const data = await res.json();
-      assert.ok(data.error.includes('PIN'));
-    });
-
-    it('should allow check-in when correct PIN is provided', async () => {
-      const req = new Request('http://localhost:3000/api/attendance/check-in', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          internId: 'intern-pin',
-          latitude: -6.180495,
-          longitude: 106.822769,
-          pin: '889900',
         }),
       });
       const res = await checkInRoute(req);
       assert.equal(res.status, 201);
+      const data = await res.json();
+      assert.equal(data.internId, 'intern-pin');
     });
 
-    it('should allow check-in without PIN for backward compatibility when intern has no PIN', async () => {
+    it('should allow check-in when optional PIN or arbitrary PIN is passed', async () => {
       const req = new Request('http://localhost:3000/api/attendance/check-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internId: 'intern-pin-2',
+          latitude: -6.180495,
+          longitude: 106.822769,
+          pin: 'any-string',
+        }),
+      });
+      // intern-pin-2 doesn't exist yet, so create or use intern-nopin
+      const nopinReq = new Request('http://localhost:3000/api/attendance/check-in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           internId: 'intern-nopin',
           latitude: -6.180495,
           longitude: 106.822769,
+          pin: 'legacy-pin',
         }),
       });
-      const res = await checkInRoute(req);
+      const res = await checkInRoute(nopinReq);
       assert.equal(res.status, 201);
     });
 
-    it('should reject check-out when PIN is wrong and accept when correct', async () => {
-      // 1. Check in first
-      await checkInRoute(
+    it('should allow check-out without PIN for intern with pinHash', async () => {
+      // 1. Check in first without PIN
+      const inRes = await checkInRoute(
         new Request('http://localhost:3000/api/attendance/check-in', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -156,13 +152,13 @@ describe('Anti-Proxy PIN Authentication & Verification Layer', () => {
             internId: 'intern-pin',
             latitude: -6.180495,
             longitude: 106.822769,
-            pin: '889900',
           }),
         })
       );
+      assert.equal(inRes.status, 201);
 
-      // 2. Reject check-out with wrong PIN
-      const badOut = await checkOutRoute(
+      // 2. Check out directly without PIN
+      const outRes = await checkOutRoute(
         new Request('http://localhost:3000/api/attendance/check-out', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -170,26 +166,12 @@ describe('Anti-Proxy PIN Authentication & Verification Layer', () => {
             internId: 'intern-pin',
             latitude: -6.180495,
             longitude: 106.822769,
-            pin: '000000',
           }),
         })
       );
-      assert.equal(badOut.status, 401);
-
-      // 3. Accept check-out with correct PIN
-      const goodOut = await checkOutRoute(
-        new Request('http://localhost:3000/api/attendance/check-out', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            internId: 'intern-pin',
-            latitude: -6.180495,
-            longitude: 106.822769,
-            pin: '889900',
-          }),
-        })
-      );
-      assert.equal(goodOut.status, 200);
+      assert.equal(outRes.status, 200);
+      const outData = await outRes.json();
+      assert.ok(outData.checkOutTime);
     });
   });
 });

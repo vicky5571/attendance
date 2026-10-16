@@ -72,7 +72,6 @@ describe('Intern Registration API (POST /api/auth/register)', () => {
       namaLengkap: 'Dimas Wicaksono',
       email: 'dimas.wicaksono@ioh.co.id',
       password: 'SecurePassword2026!',
-      pin: '654321',
       divisi: 'Cloud Infrastructure',
       namaMentor: 'Vicky Backend Lead',
       emailMentor: 'mentor.vicky@indosat.com',
@@ -113,8 +112,6 @@ describe('Intern Registration API (POST /api/auth/register)', () => {
     assert.strictEqual(internInDb.namaLengkap, 'Dimas Wicaksono');
     assert.ok(internInDb.passwordHash);
     assert.ok(verifyPassword('SecurePassword2026!', internInDb.passwordHash));
-    assert.ok(internInDb.pinHash);
-    assert.ok(verifyPin('654321', internInDb.pinHash));
     assert.strictEqual(internInDb.photoUrl, data.intern.photoUrl);
 
     // Verify newly registered user can login immediately
@@ -149,16 +146,15 @@ describe('Intern Registration API (POST /api/auth/register)', () => {
     assert.match(data.error, /wajib diisi|tidak lengkap/i);
   });
 
-  test('should reject registration with invalid 6-digit PIN with 400', async () => {
+  test('should successfully register even without providing any PIN', async () => {
     const facePhoto = await createValidFaceBase64();
     const req = new Request('http://localhost:3000/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         namaLengkap: 'Budi Santoso',
-        email: 'budi.pin@ioh.co.id',
+        email: 'budi.nopin@ioh.co.id',
         password: 'Password123!',
-        pin: '1234', // Only 4 digits
         divisi: 'IT',
         namaMentor: 'Mentor',
         emailMentor: 'mentor@ioh.co.id',
@@ -170,9 +166,10 @@ describe('Intern Registration API (POST /api/auth/register)', () => {
     });
 
     const res = await registerRoute(req);
-    assert.strictEqual(res.status, 400);
+    assert.strictEqual(res.status, 201);
     const data = await res.json();
-    assert.match(data.error, /PIN/i);
+    assert.strictEqual(data.message, 'Registrasi berhasil');
+    createdPhotos.push(data.intern.photoUrl);
   });
 
   test('should reject registration with already registered email with 409', async () => {
