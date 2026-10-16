@@ -49,6 +49,49 @@ export default function AdminDashboardPage() {
     setTimeout(() => setToast(null), 3500);
   };
 
+  // Mentor assignment modal state
+  const [editingMentorIntern, setEditingMentorIntern] = useState<InternProfile | null>(null);
+  const [mentorForm, setMentorForm] = useState({ namaMentor: '', emailMentor: '' });
+  const [savingMentor, setSavingMentor] = useState(false);
+
+  const openMentorModal = (intern: InternProfile) => {
+    setEditingMentorIntern(intern);
+    setMentorForm({
+      namaMentor: intern.namaMentor === 'Belum Ditugaskan' ? '' : intern.namaMentor || '',
+      emailMentor: intern.emailMentor || '',
+    });
+  };
+
+  const handleSaveMentor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMentorIntern) return;
+    setSavingMentor(true);
+    try {
+      const res = await fetch('/api/interns', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internId: editingMentorIntern.id,
+          namaMentor: mentorForm.namaMentor.trim(),
+          emailMentor: mentorForm.emailMentor.trim(),
+        }),
+      });
+
+      if (res.ok) {
+        notify('Mentor pembimbing berhasil ditugaskan!', 'success');
+        setEditingMentorIntern(null);
+        fetchInterns();
+      } else {
+        const data = await res.json().catch(() => null);
+        notify(data?.error || 'Gagal menyimpan data mentor', 'error');
+      }
+    } catch {
+      notify('Koneksi server gagal', 'error');
+    } finally {
+      setSavingMentor(false);
+    }
+  };
+
   // Route Authentication Guard
   useEffect(() => {
     if (!isLoading) {
@@ -378,6 +421,36 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
+                {/* Mentor Assignment Ribbon */}
+                <div className="bg-slate-100/70 p-2.5 rounded-xl flex items-center justify-between text-[11px] gap-2">
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      Mentor Pembimbing
+                    </span>
+                    <span className="font-bold text-slate-800 truncate text-[11px]">
+                      {intern.namaMentor && intern.namaMentor !== 'Belum Ditugaskan' ? (
+                        intern.namaMentor
+                      ) : (
+                        <span className="text-amber-700 bg-amber-100/80 px-1.5 py-0.5 rounded text-[10px] font-extrabold">
+                          Belum Ditugaskan
+                        </span>
+                      )}
+                    </span>
+                    {intern.emailMentor && (
+                      <span className="text-[10px] text-slate-400 truncate">
+                        {intern.emailMentor}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openMentorModal(intern)}
+                    className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:border-[#ED0278] hover:text-[#ED0278] text-slate-700 font-extrabold text-[10px] transition shadow-2xs cursor-pointer shrink-0"
+                  >
+                    {intern.namaMentor && intern.namaMentor !== 'Belum Ditugaskan' ? 'Ubah' : 'Tugaskan'}
+                  </button>
+                </div>
+
                 <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2">
                   <button
                     type="button"
@@ -541,6 +614,85 @@ export default function AdminDashboardPage() {
           internId={inspectIntern.id}
           internName={inspectIntern.namaLengkap}
         />
+      )}
+
+      {/* Assign Mentor Modal */}
+      {editingMentorIntern && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-slate-100 flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#ED0278] animate-pulse" />
+                <h3 className="text-sm font-black text-slate-900">
+                  Tugaskan Mentor Pembimbing
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingMentorIntern(null)}
+                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xs font-bold transition cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Peserta Magang:</p>
+              <p className="text-xs font-black text-slate-900 mt-0.5">{editingMentorIntern.namaLengkap}</p>
+              <p className="text-[10px] text-slate-500 font-semibold">{editingMentorIntern.divisi}</p>
+            </div>
+
+            <form onSubmit={handleSaveMentor} className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1 text-left">
+                <label className="text-[11px] font-bold text-slate-600">
+                  Nama Mentor / Pembimbing <span className="text-pink-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={mentorForm.namaMentor}
+                  onChange={(e) => setMentorForm((p) => ({ ...p, namaMentor: e.target.value }))}
+                  placeholder="cth. Bambang Supriyanto"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 text-xs font-semibold focus:outline-none focus:border-[#ED0278] focus:ring-2 focus:ring-pink-500/10 transition-all shadow-xs"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1 text-left">
+                <label className="text-[11px] font-bold text-slate-600">
+                  Email Mentor <span className="text-pink-600">*</span>
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={mentorForm.emailMentor}
+                  onChange={(e) => setMentorForm((p) => ({ ...p, emailMentor: e.target.value }))}
+                  placeholder="cth. bambang.mentor@indosat.com"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 text-xs font-semibold focus:outline-none focus:border-[#ED0278] focus:ring-2 focus:ring-pink-500/10 transition-all shadow-xs"
+                />
+                <span className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                  Email ini akan otomatis menerima broadcast rekap harian khusus absensi mentees bimbingannya.
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingMentorIntern(null)}
+                  className="flex-1 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingMentor}
+                  className="flex-1 py-2 rounded-xl bg-[#ED0278] hover:bg-[#d6026c] text-white text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  {savingMentor ? 'Menyimpan...' : 'Simpan Mentor'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

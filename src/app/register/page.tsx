@@ -38,8 +38,6 @@ export default function RegisterPage() {
     email: '',
     password: '',
     divisi: '',
-    namaMentor: '',
-    emailMentor: '',
     universitas: '',
     jurusan: '',
     periodeMagangSelesai: '',

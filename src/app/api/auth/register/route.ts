@@ -49,8 +49,6 @@ export async function POST(req: Request) {
       !email?.trim() ||
       !password?.trim() ||
       !divisi?.trim() ||
-      !namaMentor?.trim() ||
-      !emailMentor?.trim() ||
       !universitas?.trim() ||
       !jurusan?.trim() ||
       !periodeMagangSelesai?.trim() ||
@@ -152,8 +150,8 @@ export async function POST(req: Request) {
       id: internId,
       namaLengkap: namaLengkap.trim(),
       divisi: divisi.trim(),
-      namaMentor: namaMentor.trim(),
-      emailMentor: emailMentor.trim(),
+      namaMentor: namaMentor?.trim() || 'Belum Ditugaskan',
+      emailMentor: emailMentor?.trim() || '',
       universitas: universitas.trim(),
       jurusan: jurusan.trim(),
       periodeMagangSelesai: periodeMagangSelesai.trim(),

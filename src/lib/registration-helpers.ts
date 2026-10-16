@@ -28,14 +28,6 @@ export function validateRegistrationForm(
     return { isValid: false, error: 'Divisi magang wajib diisi.' };
   }
 
-  if (!data.namaMentor || !data.namaMentor.trim()) {
-    return { isValid: false, error: 'Nama mentor pembimbing wajib diisi.' };
-  }
-
-  if (!data.emailMentor || !emailRegex.test(data.emailMentor.trim())) {
-    return { isValid: false, error: 'Format alamat email mentor tidak valid.' };
-  }
-
   if (!data.universitas || !data.universitas.trim()) {
     return { isValid: false, error: 'Asal universitas / kampus wajib diisi.' };
   }

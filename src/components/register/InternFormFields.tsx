@@ -304,38 +304,6 @@ export function InternFormFields({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1 text-left">
-            <label className="text-[11px] font-bold text-slate-600">
-              Nama Mentor / Pembimbing <span className="text-pink-600">*</span>
-            </label>
-            <input
-              type="text"
-              name="namaMentor"
-              required
-              value={formData.namaMentor}
-              onChange={onInputChange}
-              placeholder="cth. Vicky Backend Lead"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 text-xs font-semibold placeholder:text-slate-400 focus:outline-none focus:border-[#ED0278] focus:ring-2 focus:ring-pink-500/10 transition-all shadow-xs"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1 text-left">
-            <label className="text-[11px] font-bold text-slate-600">
-              Email Mentor <span className="text-pink-600">*</span>
-            </label>
-            <input
-              type="email"
-              name="emailMentor"
-              required
-              value={formData.emailMentor}
-              onChange={onInputChange}
-              placeholder="cth. mentor.vicky@indosat.com"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 text-xs font-semibold placeholder:text-slate-400 focus:outline-none focus:border-[#ED0278] focus:ring-2 focus:ring-pink-500/10 transition-all shadow-xs"
-            />
-          </div>
-        </div>
-
         <div className="flex flex-col gap-1 text-left">
           <label className="text-[11px] font-bold text-slate-600">
             Tanggal Selesai Magang <span className="text-pink-600">*</span>

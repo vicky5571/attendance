@@ -207,6 +207,18 @@ export function updateInternLocation(
   stmt.run(locationId, internId);
 }
 
+export function updateInternMentor(
+  db: DatabaseSync,
+  internId: string,
+  namaMentor: string,
+  emailMentor: string
+): void {
+  const stmt = db.prepare(`
+    UPDATE interns SET nama_mentor = ?, email_mentor = ? WHERE id = ?
+  `);
+  stmt.run(namaMentor, emailMentor, internId);
+}
+
 export function getIntern(db: DatabaseSync, id: string): InternProfile | null {
   const stmt = db.prepare('SELECT * FROM interns WHERE id = ?');
   const row = stmt.get(id) as unknown as InternRow | undefined;

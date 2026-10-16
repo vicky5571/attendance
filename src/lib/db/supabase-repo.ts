@@ -189,6 +189,25 @@ export async function updateInternPhotoInSupabase(internId: string, photoUrl: st
   return !error;
 }
 
+export async function updateInternMentorInSupabase(
+  internId: string,
+  namaMentor: string,
+  emailMentor: string
+): Promise<boolean> {
+  const supabase = await getSupabaseAdmin();
+  if (!supabase) return false;
+
+  const { error } = await supabase
+    .from('interns')
+    .update({
+      nama_mentor: namaMentor,
+      email_mentor: emailMentor,
+    })
+    .eq('id', internId);
+
+  return !error;
+}
+
 export async function listInternsFromSupabase(status?: 'ACTIVE' | 'COMPLETED'): Promise<InternProfile[]> {
   const supabase = await getSupabaseAdmin();
   if (!supabase) return [];

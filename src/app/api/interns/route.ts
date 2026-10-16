@@ -1,10 +1,17 @@
 import { getDatabase } from '../../../lib/db/client.ts';
-import { getIntern, createIntern, listInterns, updateInternLocation } from '../../../lib/db/repo.ts';
+import {
+  getIntern,
+  createIntern,
+  listInterns,
+  updateInternLocation,
+  updateInternMentor,
+} from '../../../lib/db/repo.ts';
 import { isSupabaseConfigured } from '../../../lib/supabase/admin.ts';
 import {
   listInternsFromSupabase,
   createInternInSupabase,
   getInternFromSupabase,
+  updateInternMentorInSupabase,
 } from '../../../lib/db/supabase-repo.ts';
 import type { InternProfile } from '../../../types/index.ts';
 
@@ -75,25 +82,45 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { internId, locationId } = body;
+    const { internId, locationId, namaMentor, emailMentor } = body;
 
-    if (!internId || !locationId) {
+    if (!internId) {
       return Response.json(
-        { error: 'internId dan locationId wajib disertakan' },
+        { error: 'internId wajib disertakan' },
         { status: 400 }
       );
     }
 
-    const db = getDatabase();
-    const intern = getIntern(db, internId);
-    if (!intern) {
-      return Response.json({ error: `Intern not found with ID: ${internId}` }, { status: 404 });
+    if (isSupabaseConfigured()) {
+      if (namaMentor !== undefined || emailMentor !== undefined) {
+        await updateInternMentorInSupabase(
+          internId,
+          namaMentor || 'Belum Ditugaskan',
+          emailMentor || ''
+        );
+      }
     }
 
-    updateInternLocation(db, internId, locationId);
+    const db = getDatabase();
+    try {
+      if (locationId) {
+        updateInternLocation(db, internId, locationId);
+      }
+      if (namaMentor !== undefined || emailMentor !== undefined) {
+        updateInternMentor(
+          db,
+          internId,
+          namaMentor || 'Belum Ditugaskan',
+          emailMentor || ''
+        );
+      }
+    } catch {}
+
     return Response.json({
-      message: 'Lokasi kantor berhasil diperbarui',
+      message: 'Data intern berhasil diperbarui',
       internId,
+      namaMentor,
+      emailMentor,
       locationId,
     });
   } catch (err) {
