@@ -726,9 +726,6 @@ export default function AdminDashboardPage() {
                   {isSavingSupervisorEmail ? 'Menyimpan...' : 'Simpan'}
                 </button>
               </div>
-              <p className="text-[10px] text-slate-400 leading-tight">
-                Ganti email atasan kapan saja di sini tanpa perlu mengubah environment variable di Vercel.
-              </p>
             </div>
 
             <div className="flex items-center gap-2">
