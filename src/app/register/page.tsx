@@ -16,7 +16,6 @@ export default function RegisterPage() {
     namaLengkap: '',
     email: '',
     password: '',
-    pin: '',
     divisi: '',
     namaMentor: '',
     emailMentor: '',

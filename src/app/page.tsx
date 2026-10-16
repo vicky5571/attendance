@@ -8,7 +8,6 @@ import { ProfileCard } from '@/components/ProfileCard';
 import { RadarCard } from '@/components/RadarCard';
 import { AttendanceActions } from '@/components/AttendanceActions';
 import { WhatsAppModal } from '@/components/WhatsAppModal';
-import { PinModal } from '@/components/PinModal';
 import { RequestModal } from '@/components/RequestModal';
 import { HistoryModal } from '@/components/HistoryModal';
 import { MentorApprovalModal } from '@/components/MentorApprovalModal';
@@ -50,7 +49,6 @@ export default function AttendancePage() {
   const [selfieModalOpen, setSelfieModalOpen] = useState(false);
   const [pendingSelfiePhotoUrl, setPendingSelfiePhotoUrl] = useState<string | null>(null);
   const [isUploadingSelfie, setIsUploadingSelfie] = useState(false);
-  const [pinModalOpen, setPinModalOpen] = useState(false);
   const [pendingActionType, setPendingActionType] = useState<'check-in' | 'check-out' | null>(null);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
@@ -313,58 +311,26 @@ export default function AttendancePage() {
     };
   }, [records.in, records.out, coords, isWithin, maxRadius]);
 
-  const handleSelfieCaptured = async (base64Image: string) => {
-    if (!currentInternId || !pendingActionType) return;
-    setIsUploadingSelfie(true);
-    try {
-      const res = await fetch('/api/attendance/upload-photo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          internId: currentInternId,
-          image: base64Image,
-          type: pendingActionType === 'check-in' ? 'CHECK_IN' : 'CHECK_OUT',
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        notify(data.error || 'Gagal mengunggah foto selfie', 'error');
-        setIsUploadingSelfie(false);
-        return;
-      }
-
-      setPendingSelfiePhotoUrl(data.photoUrl);
-      setIsUploadingSelfie(false);
-      setSelfieModalOpen(false);
-      setPinModalOpen(true);
-    } catch {
-      notify('Koneksi server gagal saat mengunggah foto', 'error');
-      setIsUploadingSelfie(false);
-    }
-  };
-
-  // Submit check-in or check-out with verified PIN for the authenticated intern
-  const executeAttendanceWithPin = async (pin: string): Promise<boolean> => {
+  const executeAttendance = async (overridePhotoUrl?: string): Promise<boolean> => {
     if (!coords || !pendingActionType) return false;
     setActionLoading(true);
     const targetDate = simulatedDate || todayStr || new Date().toISOString().split('T')[0];
     const timestampPayload = simulatedTime ? `${targetDate}T${simulatedTime}:00` : undefined;
 
     try {
+      const activePhoto = overridePhotoUrl || pendingSelfiePhotoUrl;
       const punchBody: Record<string, any> = {
         internId: currentInternId,
         latitude: coords.lat,
         longitude: coords.lng,
-        pin,
         locationId: selectedLocationId,
         timestamp: timestampPayload,
       };
 
-      if (pendingSelfiePhotoUrl) {
-        punchBody.photoUrl = pendingSelfiePhotoUrl;
+      if (activePhoto) {
+        punchBody.photoUrl = activePhoto;
         if (pendingActionType === 'check-out') {
-          punchBody.checkOutPhotoUrl = pendingSelfiePhotoUrl;
+          punchBody.checkOutPhotoUrl = activePhoto;
         }
       }
 
@@ -397,21 +363,20 @@ export default function AttendancePage() {
         setRecords(updated);
         saveAttendanceCache(currentInternId, targetDate, updated);
 
-        if (pendingSelfiePhotoUrl) {
-          saveInternPhotoUrl(currentInternId, pendingSelfiePhotoUrl);
+        if (activePhoto) {
+          saveInternPhotoUrl(currentInternId, activePhoto);
           setInterns((prev) =>
             prev.map((i) =>
-              i.id === currentInternId ? { ...i, photoUrl: pendingSelfiePhotoUrl } : i
+              i.id === currentInternId ? { ...i, photoUrl: activePhoto } : i
             )
           );
           if (user) {
-            user.photoUrl = pendingSelfiePhotoUrl;
+            user.photoUrl = activePhoto;
           }
         }
         setPendingSelfiePhotoUrl(null);
 
         notify(`Berhasil ${pendingActionType === 'check-in' ? 'Check-In' : 'Check-Out'}!`, 'success');
-        setPinModalOpen(false);
         setPendingActionType(null);
         setActionLoading(false);
         return true;
@@ -424,6 +389,39 @@ export default function AttendancePage() {
       notify('Koneksi server gagal', 'error');
       setActionLoading(false);
       return false;
+    }
+  };
+
+  const handleSelfieCaptured = async (base64Image: string) => {
+    if (!currentInternId || !pendingActionType) return;
+    setIsUploadingSelfie(true);
+    try {
+      const res = await fetch('/api/attendance/upload-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internId: currentInternId,
+          image: base64Image,
+          type: pendingActionType === 'check-in' ? 'CHECK_IN' : 'CHECK_OUT',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        notify(data.error || 'Gagal mengunggah foto selfie', 'error');
+        setIsUploadingSelfie(false);
+        return;
+      }
+
+      setPendingSelfiePhotoUrl(data.photoUrl);
+      setIsUploadingSelfie(false);
+      setSelfieModalOpen(false);
+
+      // Directly punch attendance without PIN prompt
+      await executeAttendance(data.photoUrl);
+    } catch {
+      notify('Koneksi server gagal saat mengunggah foto', 'error');
+      setIsUploadingSelfie(false);
     }
   };
 
@@ -601,19 +599,6 @@ export default function AttendancePage() {
         actionType={pendingActionType || 'check-in'}
         internName={activeIntern?.namaLengkap || 'Peserta'}
         isUploading={isUploadingSelfie}
-      />
-
-      {/* PIN Anti-Proxy Verification Modal */}
-      <PinModal
-        isOpen={pinModalOpen}
-        onClose={() => {
-          setPinModalOpen(false);
-          setPendingActionType(null);
-          setPendingSelfiePhotoUrl(null);
-        }}
-        onSubmit={executeAttendanceWithPin}
-        actionType={pendingActionType || 'check-in'}
-        internName={activeIntern?.namaLengkap || 'Peserta'}
       />
 
       {/* Leave & Remote Request Modal */}
