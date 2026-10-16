@@ -18,6 +18,7 @@ export default function AdminDashboardPage() {
   const [requests, setRequests] = useState<AttendanceRequest[]>([]);
   const [locations, setLocations] = useState<OfficeLocation[]>([]);
   const [reqFilter, setReqFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
+  const [internFilter, setInternFilter] = useState<'ALL' | 'UNASSIGNED' | 'ASSIGNED'>('ALL');
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   // WhatsApp state
@@ -239,6 +240,20 @@ export default function AdminDashboardPage() {
   const filteredRequests =
     reqFilter === 'ALL' ? requests : requests.filter((r) => r.status === reqFilter);
 
+  const unassignedInterns = interns.filter(
+    (i) => !i.namaMentor || i.namaMentor === 'Belum Ditugaskan'
+  );
+  const assignedInterns = interns.filter(
+    (i) => i.namaMentor && i.namaMentor !== 'Belum Ditugaskan'
+  );
+
+  const displayedInterns =
+    internFilter === 'UNASSIGNED'
+      ? unassignedInterns
+      : internFilter === 'ASSIGNED'
+      ? assignedInterns
+      : interns;
+
 
 
   return (
@@ -308,6 +323,39 @@ export default function AdminDashboardPage() {
           </div>
         </header>
 
+        {/* Action Alert Banner for Unassigned Interns */}
+        {unassignedInterns.length > 0 && (
+          <div className="bg-gradient-to-r from-amber-500/10 via-amber-50 to-orange-50 border border-amber-200/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
+                ⚠️
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-amber-950">
+                  {unassignedInterns.length} Peserta Magang Belum Memiliki Mentor
+                </h4>
+                <p className="text-[11px] font-semibold text-amber-800/80">
+                  Tugaskan nama &amp; email mentor pembimbing agar pengingat absensi &amp; laporan harian dapat dikirimkan otomatis.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setInternFilter('UNASSIGNED');
+                const el = document.getElementById('interns-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black transition shadow-xs shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <span>Lihat &amp; Tugaskan ({unassignedInterns.length})</span>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+        )}
+
         {/* KPI Cards Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-2xs flex flex-col justify-between">
@@ -316,9 +364,23 @@ export default function AdminDashboardPage() {
             </span>
             <div className="flex items-baseline justify-between mt-1">
               <span className="text-2xl font-black text-slate-900">{interns.length}</span>
-              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                Semua Aktif
-              </span>
+              {unassignedInterns.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInternFilter('UNASSIGNED');
+                    const el = document.getElementById('interns-section');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="text-[10px] font-black text-amber-700 bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded-full hover:bg-amber-200 transition cursor-pointer"
+                >
+                  {unassignedInterns.length} Butuh Mentor
+                </button>
+              ) : (
+                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                  Semua Lengkap
+                </span>
+              )}
             </div>
           </div>
 
@@ -374,8 +436,8 @@ export default function AdminDashboardPage() {
         />
 
         {/* Section 2: Interns List & Timesheet CSV */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-xs flex flex-col gap-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div id="interns-section" className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-xs flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-3">
             <div>
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-pink-50 text-[#ED0278] flex items-center justify-center shrink-0">
@@ -393,100 +455,168 @@ export default function AdminDashboardPage() {
                 </h2>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Pantau rekapan bulanan dan unduh laporan resmi CSV (format standar IOH IAC)
+                Pantau rekapan bulanan, tugaskan mentor, dan unduh laporan resmi CSV (format standar IOH IAC)
               </p>
+            </div>
+
+            {/* Quick Filter Tabs for Mentor Status */}
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setInternFilter('ALL')}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-extrabold transition cursor-pointer ${
+                  internFilter === 'ALL'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                Semua ({interns.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setInternFilter('UNASSIGNED')}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-extrabold transition cursor-pointer flex items-center gap-1.5 ${
+                  internFilter === 'UNASSIGNED'
+                    ? 'bg-amber-500 text-white shadow-2xs'
+                    : unassignedInterns.length > 0
+                    ? 'text-amber-800 bg-amber-100/70 hover:bg-amber-200/70'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                <span>⚠️ Butuh Mentor</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                    internFilter === 'UNASSIGNED'
+                      ? 'bg-amber-600 text-white'
+                      : 'bg-amber-200 text-amber-900'
+                  }`}
+                >
+                  {unassignedInterns.length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setInternFilter('ASSIGNED')}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-extrabold transition cursor-pointer ${
+                  internFilter === 'ASSIGNED'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                Sudah Ada ({assignedInterns.length})
+              </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {interns.map((intern) => (
-              <div
-                key={intern.id}
-                className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 flex flex-col justify-between gap-3"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#ED0278] to-[#FF4B98] flex items-center justify-center text-white font-extrabold text-base shadow-xs shrink-0">
-                    {intern.namaLengkap.charAt(0)}
+          {displayedInterns.length === 0 ? (
+            <div className="py-12 flex flex-col items-center justify-center text-center p-4">
+              <span className="text-3xl mb-2">🎉</span>
+              <p className="text-xs font-bold text-slate-700">
+                {internFilter === 'UNASSIGNED'
+                  ? 'Luar biasa! Semua peserta magang sudah memiliki mentor pembimbing.'
+                  : 'Tidak ada data peserta magang pada filter ini.'}
+              </p>
+              {internFilter !== 'ALL' && (
+                <button
+                  type="button"
+                  onClick={() => setInternFilter('ALL')}
+                  className="mt-2 text-xs font-extrabold text-[#ED0278] hover:underline cursor-pointer"
+                >
+                  Tampilkan Semua Peserta
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {displayedInterns.map((intern) => (
+                <div
+                  key={intern.id}
+                  className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 flex flex-col justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#ED0278] to-[#FF4B98] flex items-center justify-center text-white font-extrabold text-base shadow-xs shrink-0">
+                      {intern.namaLengkap.charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-xs font-black text-slate-900 truncate">
+                        {intern.namaLengkap}
+                      </h3>
+                      <p className="text-[11px] font-bold text-[#ED0278] truncate">
+                        {intern.divisi}
+                      </p>
+                      <p className="text-[10px] text-slate-400 truncate">
+                        {intern.universitas} &bull; {intern.jurusan}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-xs font-black text-slate-900 truncate">
-                      {intern.namaLengkap}
-                    </h3>
-                    <p className="text-[11px] font-bold text-[#ED0278] truncate">
-                      {intern.divisi}
-                    </p>
-                    <p className="text-[10px] text-slate-400 truncate">
-                      {intern.universitas} &bull; {intern.jurusan}
-                    </p>
-                  </div>
-                </div>
 
-                {/* Mentor Assignment Ribbon */}
-                <div className="bg-slate-100/70 p-2.5 rounded-xl flex items-center justify-between text-[11px] gap-2">
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">
-                      Mentor Pembimbing
-                    </span>
-                    <span className="font-bold text-slate-800 truncate text-[11px]">
-                      {intern.namaMentor && intern.namaMentor !== 'Belum Ditugaskan' ? (
-                        intern.namaMentor
-                      ) : (
-                        <span className="text-amber-700 bg-amber-100/80 px-1.5 py-0.5 rounded text-[10px] font-extrabold">
-                          Belum Ditugaskan
+                  {/* Mentor Assignment Ribbon */}
+                  <div className="bg-slate-100/70 p-2.5 rounded-xl flex items-center justify-between text-[11px] gap-2">
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">
+                        Mentor Pembimbing
+                      </span>
+                      <span className="font-bold text-slate-800 truncate text-[11px]">
+                        {intern.namaMentor && intern.namaMentor !== 'Belum Ditugaskan' ? (
+                          intern.namaMentor
+                        ) : (
+                          <span className="text-amber-700 bg-amber-100/80 px-1.5 py-0.5 rounded text-[10px] font-extrabold">
+                            Belum Ditugaskan
+                          </span>
+                        )}
+                      </span>
+                      {intern.emailMentor && (
+                        <span className="text-[10px] text-slate-400 truncate">
+                          {intern.emailMentor}
                         </span>
                       )}
-                    </span>
-                    {intern.emailMentor && (
-                      <span className="text-[10px] text-slate-400 truncate">
-                        {intern.emailMentor}
-                      </span>
-                    )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openMentorModal(intern)}
+                      className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:border-[#ED0278] hover:text-[#ED0278] text-slate-700 font-extrabold text-[10px] transition shadow-2xs cursor-pointer shrink-0"
+                    >
+                      {intern.namaMentor && intern.namaMentor !== 'Belum Ditugaskan' ? 'Ubah' : 'Tugaskan'}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => openMentorModal(intern)}
-                    className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:border-[#ED0278] hover:text-[#ED0278] text-slate-700 font-extrabold text-[10px] transition shadow-2xs cursor-pointer shrink-0"
-                  >
-                    {intern.namaMentor && intern.namaMentor !== 'Belum Ditugaskan' ? 'Ubah' : 'Tugaskan'}
-                  </button>
-                </div>
 
-                <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setInspectIntern(intern)}
-                    className="flex-1 py-1.5 px-2 rounded-xl bg-white border border-slate-200 hover:border-[#ED0278] text-slate-700 font-extrabold text-[11px] transition shadow-2xs text-center cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                      />
-                    </svg>
-                    <span>Detail Logbook</span>
-                  </button>
+                  <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setInspectIntern(intern)}
+                      className="flex-1 py-1.5 px-2 rounded-xl bg-white border border-slate-200 hover:border-[#ED0278] text-slate-700 font-extrabold text-[11px] transition shadow-2xs text-center cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        />
+                      </svg>
+                      <span>Detail Logbook</span>
+                    </button>
 
-                  <a
-                    href={`/api/reports/monthly-export?internId=${encodeURIComponent(intern.id)}&month=${currentMonthStr}`}
-                    download
-                    className="flex-1 py-1.5 px-2 rounded-xl bg-[#ED0278] hover:bg-[#d6026c] text-white font-extrabold text-[11px] transition shadow-2xs text-center cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                      />
-                    </svg>
-                    <span>Unduh CSV</span>
-                  </a>
+                    <a
+                      href={`/api/reports/monthly-export?internId=${encodeURIComponent(intern.id)}&month=${currentMonthStr}`}
+                      download
+                      className="flex-1 py-1.5 px-2 rounded-xl bg-[#ED0278] hover:bg-[#d6026c] text-white font-extrabold text-[11px] transition shadow-2xs text-center cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                        />
+                      </svg>
+                      <span>Unduh CSV</span>
+                    </a>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Section 3: Daily Broadcast Engine & Geofencing */}

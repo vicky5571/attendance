@@ -10,8 +10,8 @@ export interface InternFormFieldsProps {
     password: string;
     pin?: string;
     divisi: string;
-    namaMentor: string;
-    emailMentor: string;
+    namaMentor?: string;
+    emailMentor?: string;
     universitas: string;
     jurusan: string;
     periodeMagangSelesai: string;
