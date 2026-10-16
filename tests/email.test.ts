@@ -79,4 +79,28 @@ describe('Email Notification Engine (Nodemailer)', () => {
     assert.match(antonMail.html, /Budi Setiawan/);
     assert.doesNotMatch(antonMail.html, /Zacky Kurniawan/);
   });
+
+  it('should not send duplicate email if mentor is also the supervisor', async () => {
+    const { transporter, sentMessages } = createMockTransporter();
+
+    // Vicky is both supervisor and mentor of Zacky & Sarah
+    const result = await dispatchEmailRecap(sampleSummary, {
+      supervisorEmail: 'vicky@indosat.com',
+      transporter,
+    });
+
+    // 1 to Vicky (global master report) + 1 to Anton (mentees report) = 2 emails total
+    assert.equal(result.sentCount, 2);
+    assert.equal(result.errors.length, 0);
+    assert.equal(sentMessages.length, 2);
+
+    const vickyMessages = sentMessages.filter((m) => m.to.toLowerCase() === 'vicky@indosat.com');
+    assert.equal(vickyMessages.length, 1, 'Vicky should only receive 1 email (no duplicate)');
+    assert.match(vickyMessages[0].subject, /Seluruh Divisi/i);
+    assert.match(vickyMessages[0].html, /Zacky Kurniawan/);
+    assert.match(vickyMessages[0].html, /Budi Setiawan/);
+
+    const antonMessages = sentMessages.filter((m) => m.to.toLowerCase() === 'anton@indosat.com');
+    assert.equal(antonMessages.length, 1);
+  });
 });

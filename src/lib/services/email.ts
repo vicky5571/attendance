@@ -89,19 +89,21 @@ export async function dispatchEmailRecap(
   }
 
   const transporter = options?.transporter || createDefaultTransporter();
-  const supervisorEmail = options?.supervisorEmail || process.env.EMAIL_ATASAN;
+  const rawSupervisorEmail = options?.supervisorEmail || process.env.EMAIL_ATASAN;
+  const supervisorEmail = rawSupervisorEmail?.trim();
+  const normalizedSupervisorEmail = supervisorEmail?.toLowerCase();
   const sender = process.env.SMTP_USER || 'no-reply@indosat.com';
 
   let sentCount = 0;
   const errors: string[] = [];
 
-  // 1. Dispatch global recap to supervisor (optional)
-  if (supervisorEmail && supervisorEmail.trim() !== '') {
+  // 1. Dispatch global master recap to supervisor (optional)
+  if (supervisorEmail && supervisorEmail !== '') {
     try {
       const globalHtml = generateRecapHtmlTable(summary);
       await transporter.sendMail({
         from: `"Indosat Attendance PWA" <${sender}>`,
-        to: supervisorEmail.trim(),
+        to: supervisorEmail,
         subject: `[Rekap Presensi Magang] ${summary.date} - Seluruh Divisi`,
         html: globalHtml,
       });
@@ -120,8 +122,8 @@ export async function dispatchEmailRecap(
   }
 
   for (const mentorEmail of mentorEmails) {
-    // Avoid double sending if mentor is also the supervisor
-    if (supervisorEmail && mentorEmail === supervisorEmail.toLowerCase()) {
+    // Deduplication: Avoid double sending if mentor is also the supervisor/atasan
+    if (normalizedSupervisorEmail && mentorEmail === normalizedSupervisorEmail) {
       continue;
     }
 
