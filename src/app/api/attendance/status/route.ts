@@ -1,5 +1,7 @@
 import { getDatabase } from '../../../../lib/db/client.ts';
 import { getAttendanceRecord, deleteAttendanceRecord } from '../../../../lib/db/repo.ts';
+import { isSupabaseConfigured } from '../../../../lib/supabase/admin.ts';
+import { getAttendanceRecordFromSupabase } from '../../../../lib/db/supabase-repo.ts';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -15,8 +17,11 @@ export async function GET(request: Request) {
 
   const dateStr = dateParam || new Date().toISOString().split('T')[0];
 
+  let record = isSupabaseConfigured() ? await getAttendanceRecordFromSupabase(internId, dateStr) : null;
   const db = getDatabase();
-  const record = getAttendanceRecord(db, internId, dateStr);
+  if (!record) {
+    record = getAttendanceRecord(db, internId, dateStr);
+  }
 
   return Response.json({
     checkedIn: Boolean(record?.checkInTime),

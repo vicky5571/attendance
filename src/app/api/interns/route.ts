@@ -1,10 +1,19 @@
 import { getDatabase } from '../../../lib/db/client.ts';
 import { getIntern, createIntern, listInterns, updateInternLocation } from '../../../lib/db/repo.ts';
+import { isSupabaseConfigured } from '../../../lib/supabase/admin.ts';
+import { listInternsFromSupabase } from '../../../lib/db/supabase-repo.ts';
 import type { InternProfile } from '../../../types/index.ts';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const statusParam = url.searchParams.get('status') as 'ACTIVE' | 'COMPLETED' | null;
+
+  if (isSupabaseConfigured()) {
+    const supabaseInterns = await listInternsFromSupabase(statusParam || undefined);
+    if (supabaseInterns.length > 0) {
+      return Response.json(supabaseInterns);
+    }
+  }
 
   const db = getDatabase();
   const interns = listInterns(db, statusParam || undefined);

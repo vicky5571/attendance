@@ -7,6 +7,12 @@ import {
 } from '../../../../lib/db/repo.ts';
 import { evaluateAttendanceRemarks } from '../../../../lib/geo.ts';
 import { enforceInternIdentity } from '../../../../lib/auth-guard.ts';
+import { isSupabaseConfigured } from '../../../../lib/supabase/admin.ts';
+import {
+  getAttendanceRecordFromSupabase,
+  getOfficeConfigFromSupabase,
+  recordCheckOutInSupabase,
+} from '../../../../lib/db/supabase-repo.ts';
 
 interface CheckOutPayload {
   internId: string;
@@ -48,7 +54,11 @@ export async function POST(request: Request) {
       : dateObj.toTimeString().slice(0, 8);
 
     // 2. Retrieve existing check-in
-    const existing = getAttendanceRecord(db, body.internId, dateStr);
+    let existing = isSupabaseConfigured() ? await getAttendanceRecordFromSupabase(body.internId, dateStr) : null;
+    if (!existing) {
+      existing = getAttendanceRecord(db, body.internId, dateStr);
+    }
+
     if (!existing || !existing.checkInTime) {
       return Response.json(
         { error: `No check-in record found for intern ${body.internId} on ${dateStr}` },
@@ -64,7 +74,10 @@ export async function POST(request: Request) {
     }
 
     // 3. Retrieve config for schedule evaluation
-    const config = getOfficeConfig(db);
+    let config = isSupabaseConfigured() ? await getOfficeConfigFromSupabase() : null;
+    if (!config) {
+      config = getOfficeConfig(db);
+    }
     const workEndTime = config?.workEndTime || '17:30';
 
     const timeHHmm = timeStr.slice(0, 5);
@@ -79,14 +92,36 @@ export async function POST(request: Request) {
         ? { latitude: body.latitude, longitude: body.longitude }
         : undefined;
 
-    const updated = recordCheckOut(db, body.internId, dateStr, {
+    if (isSupabaseConfigured() && coords) {
+      await recordCheckOutInSupabase(
+        body.internId,
+        dateStr,
+        timeStr,
+        coords,
+        combinedRemarks,
+        body.checkOutPhotoUrl || body.photoUrl
+      );
+    }
+
+    let updated = null;
+    try {
+      updated = recordCheckOut(db, body.internId, dateStr, {
+        checkOutTime: timeStr,
+        checkOutCoords: coords,
+        remarks: combinedRemarks,
+        checkOutPhotoUrl: body.checkOutPhotoUrl || body.photoUrl,
+      });
+    } catch {}
+
+    const responsePayload = updated || {
+      ...existing,
       checkOutTime: timeStr,
       checkOutCoords: coords,
       remarks: combinedRemarks,
       checkOutPhotoUrl: body.checkOutPhotoUrl || body.photoUrl,
-    });
+    };
 
-    return Response.json(updated, { status: 200 });
+    return Response.json(responsePayload, { status: 200 });
   } catch {
     return Response.json({ error: 'Malformed JSON payload' }, { status: 400 });
   }

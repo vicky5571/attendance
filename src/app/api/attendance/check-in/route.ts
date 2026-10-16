@@ -12,6 +12,14 @@ import {
 } from '../../../../lib/geo.ts';
 import { enforceInternIdentity } from '../../../../lib/auth-guard.ts';
 import { listOfficeLocations } from '../../../../lib/db/locations-repo.ts';
+import { isSupabaseConfigured } from '../../../../lib/supabase/admin.ts';
+import {
+  getInternFromSupabase,
+  getAttendanceRecordFromSupabase,
+  getOfficeConfigFromSupabase,
+  listOfficeLocationsFromSupabase,
+  recordCheckInInSupabase,
+} from '../../../../lib/db/supabase-repo.ts';
 import type { AttendanceRecord } from '../../../../types/index.ts';
 
 interface CheckInPayload {
@@ -48,7 +56,11 @@ export async function POST(request: Request) {
     }
 
     // 1. Verify intern exists
-    const intern = getIntern(db, body.internId);
+    let intern = isSupabaseConfigured() ? await getInternFromSupabase(body.internId) : null;
+    if (!intern) {
+      intern = getIntern(db, body.internId);
+    }
+
     if (!intern) {
       return Response.json(
         { error: `Intern not found with ID: ${body.internId}` },
@@ -67,7 +79,11 @@ export async function POST(request: Request) {
       : dateObj.toTimeString().slice(0, 8);
 
     // 3. Prevent duplicate check-in
-    const existing = getAttendanceRecord(db, body.internId, dateStr);
+    let existing = isSupabaseConfigured() ? await getAttendanceRecordFromSupabase(body.internId, dateStr) : null;
+    if (!existing) {
+      existing = getAttendanceRecord(db, body.internId, dateStr);
+    }
+
     if (existing && existing.checkInTime) {
       return Response.json(
         { error: `Check-in already recorded for intern ${body.internId} on ${dateStr}` },
@@ -76,7 +92,11 @@ export async function POST(request: Request) {
     }
 
     // 4. Retrieve office geofence config
-    const config = getOfficeConfig(db);
+    let config = isSupabaseConfigured() ? await getOfficeConfigFromSupabase() : null;
+    if (!config) {
+      config = getOfficeConfig(db);
+    }
+
     if (!config) {
       return Response.json(
         { error: 'Office configuration is not initialized' },
@@ -85,7 +105,10 @@ export async function POST(request: Request) {
     }
 
     // 5. Server-side anti-spoofing distance calculation
-    const activeLocations = listOfficeLocations(db, true);
+    let activeLocations = isSupabaseConfigured() ? await listOfficeLocationsFromSupabase(true) : [];
+    if (activeLocations.length === 0) {
+      activeLocations = listOfficeLocations(db, true);
+    }
     let distance = 0;
     let matchedLocationId: string | undefined = undefined;
 
@@ -140,7 +163,12 @@ export async function POST(request: Request) {
       remarks: remarkEval.remarks,
     };
 
-    recordCheckIn(db, record);
+    if (isSupabaseConfigured()) {
+      await recordCheckInInSupabase(record);
+    }
+    try {
+      recordCheckIn(db, record);
+    } catch {}
 
     return Response.json(record, { status: 201 });
   } catch {

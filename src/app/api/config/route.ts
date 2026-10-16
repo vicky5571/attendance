@@ -1,11 +1,21 @@
 import { getDatabase } from '../../../lib/db/client.ts';
 import { getOfficeConfig, setOfficeConfig } from '../../../lib/db/repo.ts';
 import { checkRoleIfAuthenticated } from '../../../lib/auth-guard.ts';
+import { isSupabaseConfigured } from '../../../lib/supabase/admin.ts';
+import { getOfficeConfigFromSupabase, upsertOfficeConfigToSupabase } from '../../../lib/db/supabase-repo.ts';
 import type { OfficeConfig } from '../../../types/index.ts';
 
 export async function GET() {
+  let config: OfficeConfig | null = null;
+  if (isSupabaseConfigured()) {
+    config = await getOfficeConfigFromSupabase();
+  }
+
   const db = getDatabase();
-  const config = getOfficeConfig(db);
+  if (!config) {
+    config = getOfficeConfig(db);
+  }
+
   if (!config) {
     return Response.json({ error: 'Office config not found' }, { status: 404 });
   }
@@ -38,8 +48,11 @@ export async function PUT(request: Request) {
       return roleCheck.errorResponse;
     }
 
+    if (isSupabaseConfigured()) {
+      await upsertOfficeConfigToSupabase(body);
+    }
     setOfficeConfig(db, body);
-    const updated = getOfficeConfig(db);
+    const updated = (isSupabaseConfigured() ? await getOfficeConfigFromSupabase() : null) || getOfficeConfig(db);
 
     return Response.json(updated);
   } catch {
