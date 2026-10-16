@@ -22,7 +22,6 @@ export function SelfieModal({
   isUploading = false,
 }: SelfieModalProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -128,37 +127,6 @@ export function SelfieModal({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const targetDim = 640;
-        canvas.width = targetDim;
-        canvas.height = targetDim;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        const minDim = Math.min(img.width, img.height);
-        const startX = (img.width - minDim) / 2;
-        const startY = (img.height - minDim) / 2;
-        ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, targetDim, targetDim);
-
-        const base64 = canvas.toDataURL('image/jpeg', 0.85);
-        setPreviewImage(base64);
-        stopCamera();
-      };
-      if (typeof event.target?.result === 'string') {
-        img.src = event.target.result;
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
   if (!isOpen) return null;
 
   const isCheckIn = actionType === 'check-in';
@@ -256,33 +224,28 @@ export function SelfieModal({
               {cameraError && (
                 <div className="absolute inset-0 bg-slate-900/95 p-4 flex flex-col items-center justify-center gap-3 text-center text-white">
                   <div className="w-10 h-10 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-lg">
-                    📷
+                    <svg className="w-5 h-5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
                   </div>
                   <div className="text-xs font-bold text-rose-300">Akses Kamera Diperlukan</div>
-                  <p className="text-[11px] text-slate-300 leading-relaxed">
-                    Presensi wajib selfie langsung. Izinkan akses kamera browser atau buka kamera perangkat langsung:
+                  <p className="text-[11px] text-slate-300 leading-relaxed max-w-xs">
+                    Wajib menggunakan kamera langsung (live camera). Unggah foto dari galeri tidak diizinkan. Silakan aktifkan izin kamera pada browser Anda.
                   </p>
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-4 py-2 rounded-full bg-[#ED0278] text-white font-extrabold text-xs shadow-md shadow-pink-500/20 hover:bg-[#d6026c] transition cursor-pointer"
+                    onClick={startCamera}
+                    className="px-4 py-2 rounded-full bg-[#ED0278] hover:bg-[#d6026c] text-white font-extrabold text-xs shadow-md shadow-pink-500/20 transition cursor-pointer flex items-center gap-1.5"
                   >
-                    Buka Kamera HP Langsung
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>Coba Kamera Lagi</span>
                   </button>
                 </div>
               )}
             </>
           )}
-
-          {/* Hidden Direct Camera Fallback (capture="user" strictly triggers device front camera) */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            capture="user"
-            onChange={handleFileChange}
-            className="hidden"
-          />
         </div>
 
         {/* Caption Guide */}

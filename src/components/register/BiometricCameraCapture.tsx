@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { SelfieModal } from '@/components/SelfieModal';
 
 export interface BiometricCameraCaptureProps {
@@ -14,52 +14,8 @@ export function BiometricCameraCapture({
   facePhoto,
   onPhotoCaptured,
   onPhotoReset,
-  onError,
 }: BiometricCameraCaptureProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      const err = 'Berkas yang dipilih harus berupa file gambar (JPG, PNG, atau WEBP).';
-      if (onError) onError(err);
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      const err = 'Ukuran file foto maksimal adalah 5MB.';
-      if (onError) onError(err);
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const targetDim = 640;
-        canvas.width = targetDim;
-        canvas.height = targetDim;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        const minDim = Math.min(img.width, img.height);
-        const startX = (img.width - minDim) / 2;
-        const startY = (img.height - minDim) / 2;
-        ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, targetDim, targetDim);
-
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-        onPhotoCaptured(dataUrl);
-      };
-      if (typeof event.target?.result === 'string') {
-        img.src = event.target.result;
-      }
-    };
-    reader.readAsDataURL(file);
-  };
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -103,7 +59,7 @@ export function BiometricCameraCapture({
           </div>
         </div>
       ) : (
-        /* Empty / Camera Trigger State */
+        /* Empty / Live Camera Trigger State (No Gallery Upload) */
         <div className="w-full max-w-[280px] rounded-3xl border-2 border-dashed border-slate-200 bg-white flex flex-col items-center justify-center p-6 text-center shadow-xs">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#ED0278]/10 to-[#FF4B98]/20 text-[#ED0278] flex items-center justify-center mb-3 shadow-2xs">
             <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -119,50 +75,28 @@ export function BiometricCameraCapture({
 
           <h3 className="text-xs font-black text-slate-800">Biometrik Wajah Belum Ada</h3>
           <p className="text-[11px] text-slate-400 mt-1 mb-4 leading-relaxed">
-            Ambil foto selfie langsung dengan kamera untuk verifikasi biometrik.
+            Wajib mengambil foto langsung menggunakan kamera. Unggah dari galeri atau berkas tidak diizinkan.
           </p>
 
-          <div className="flex flex-col gap-2 w-full">
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(true)}
-              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#ED0278] via-[#FF2686] to-[#FF4B98] hover:opacity-95 text-white text-xs font-bold shadow-md shadow-pink-500/20 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                />
-              </svg>
-              <span>Buka Kamera Selfie</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full py-2 px-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5"
-            >
-              <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              <span>Unggah dari File / Galeri</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#ED0278] via-[#FF2686] to-[#FF4B98] hover:opacity-95 text-white text-xs font-bold shadow-md shadow-pink-500/20 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+              />
+            </svg>
+            <span>Buka Kamera Selfie</span>
+          </button>
         </div>
       )}
 
-      {/* Hidden File Input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        onChange={handleFileUpload}
-        className="hidden"
-      />
-
-      {/* Reusable SelfieModal matching check-in exactly */}
+      {/* Reusable SelfieModal matching check-in/check-out strictly via live camera */}
       <SelfieModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
