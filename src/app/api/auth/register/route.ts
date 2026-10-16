@@ -1,6 +1,5 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { uploadImageFile } from '../../../../lib/storage/service.ts';
 import { getDatabase } from '../../../../lib/db/client.ts';
 import { getInternByEmail, createIntern } from '../../../../lib/db/repo.ts';
 import { hashPassword } from '../../../../lib/auth.ts';
@@ -126,16 +125,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // 6. Write Face Image to Public Uploads Directory
-    const targetDir = join(process.cwd(), 'public', 'uploads', 'faces');
-    await mkdir(targetDir, { recursive: true });
-
+    // 6. Save Face Photo via Unified Storage Service (Supabase Storage or local fallback)
     const internId = `intern-${randomBytes(4).toString('hex')}`;
-    const filename = `${internId}-face-${Date.now()}-${randomBytes(3).toString('hex')}${extension}`;
-    const filePath = join(targetDir, filename);
-
-    await writeFile(filePath, buffer);
-    const photoUrl = `/uploads/faces/${filename}`;
+    const uploadResult = await uploadImageFile('faces', internId, buffer, extension, mimeType);
+    const photoUrl = uploadResult.url;
 
     // 7. Persist Intern Record with Hashed Password & PIN
     const passwordHash = hashPassword(password);

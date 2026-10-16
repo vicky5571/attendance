@@ -1,6 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
-import { randomBytes } from 'node:crypto';
+import { uploadImageFile } from '../../../../lib/storage/service.ts';
 import { getDatabase } from '../../../../lib/db/client.ts';
 import { getIntern } from '../../../../lib/db/repo.ts';
 import { enforceInternIdentity } from '../../../../lib/auth-guard.ts';
@@ -78,18 +76,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // Prepare upload directory: public/uploads/selfies
-    const targetDir = join(process.cwd(), 'public', 'uploads', 'selfies');
-    await mkdir(targetDir, { recursive: true });
-
-    // Generate collision-resistant filename
-    const sanitizedId = internId.replace(/[^a-zA-Z0-9_-]/g, '');
-    const filename = `${sanitizedId}-${Date.now()}-${randomBytes(4).toString('hex')}${extension}`;
-    const filePath = join(targetDir, filename);
-
-    await writeFile(filePath, buffer);
-
-    const publicUrl = `/uploads/selfies/${filename}`;
+    // Save photo using Unified Storage Service (Supabase Storage or local fallback)
+    const uploadResult = await uploadImageFile('selfies', internId, buffer, extension, mimeType);
+    const publicUrl = uploadResult.url;
 
     return Response.json(
       {

@@ -13,6 +13,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
     "@whiskeysockets/baileys": "^7.0.0-rc14",
     "jimp": "^1.6.1",
     "next": "16.4.0",
