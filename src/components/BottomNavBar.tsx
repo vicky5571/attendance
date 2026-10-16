@@ -2,10 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
 export function BottomNavBar() {
+  const router = useRouter();
   const pathname = usePathname();
   const { user, isAuthenticated, isLoading } = useAuth();
 
@@ -28,8 +29,18 @@ export function BottomNavBar() {
   }
 
   const isHomeActive = pathname === '/';
-  const isAbsensiActive = pathname === '/catatan-presensi';
   const isProfilActive = pathname.startsWith('/profile');
+
+  const handleAbsensiClick = () => {
+    if (pathname === '/') {
+      window.dispatchEvent(new CustomEvent('trigger-attendance-punch'));
+    } else {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('auto_trigger_punch', 'true');
+      }
+      router.push('/');
+    }
+  };
 
   return (
     <nav
@@ -75,21 +86,17 @@ export function BottomNavBar() {
           </span>
         </Link>
 
-        {/* Tab 2: Absensi (Center Elevated Button - GoPay QRIS Style dengan Palet Indosat) */}
-        <Link
-          href="/catatan-presensi"
+        {/* Tab 2: Absensi (Center Action Button - GoPay QRIS Style dengan Palet Indosat) */}
+        <button
+          type="button"
+          onClick={handleAbsensiClick}
           className="flex flex-col items-center justify-center flex-1 relative -top-3 group cursor-pointer active:scale-95 transition-transform duration-150"
+          title="Lakukan Presensi Langsung"
         >
           {/* Outer Halo Notch Ring */}
           <div className="p-1 rounded-[24px] bg-[#16181D] border-2 border-[#262A35] shadow-2xl">
             {/* Inner Vibrant Indosat Magenta Capsule */}
-            <div
-              className={`w-15 h-10 sm:w-16 sm:h-11 rounded-[20px] bg-gradient-to-tr from-[#ED0278] via-[#FF2686] to-[#FF4B98] flex items-center justify-center text-white shadow-lg transition-all duration-200 ${
-                isAbsensiActive
-                  ? 'ring-2 ring-white/70 shadow-[#ED0278]/60 scale-105'
-                  : 'shadow-[#ED0278]/35 group-hover:shadow-[#ED0278]/55 group-hover:scale-105'
-              }`}
-            >
+            <div className="w-15 h-10 sm:w-16 sm:h-11 rounded-[20px] bg-gradient-to-tr from-[#ED0278] via-[#FF2686] to-[#FF4B98] flex items-center justify-center text-white shadow-lg shadow-[#ED0278]/40 group-hover:shadow-[#ED0278]/60 group-hover:scale-105 transition-all duration-200">
               {/* GoPay-Style Scanner / Punch Icon */}
               <svg
                 className="w-6 h-6 text-white"
@@ -106,16 +113,10 @@ export function BottomNavBar() {
               </svg>
             </div>
           </div>
-          <span
-            className={`text-[11px] tracking-tight leading-tight mt-0.5 ${
-              isAbsensiActive
-                ? 'font-black text-white'
-                : 'font-bold text-slate-300 group-hover:text-white'
-            }`}
-          >
+          <span className="text-[11px] tracking-tight leading-tight mt-0.5 font-bold text-slate-200 group-hover:text-white">
             Absensi
           </span>
-        </Link>
+        </button>
 
         {/* Tab 3: Profil */}
         <Link
