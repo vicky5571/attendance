@@ -12,8 +12,40 @@
  *   node --experimental-strip-types src/lib/db/seed-supabase.ts
  */
 
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { getSupabaseAdmin, isSupabaseConfigured } from '../supabase/admin.ts';
 import { hashPassword } from '../auth.ts';
+
+// Automatically load .env.local if running as a standalone node script
+function loadEnvLocal() {
+  const envLocalPath = resolve(process.cwd(), '.env.local');
+  if (existsSync(envLocalPath)) {
+    if (typeof (process as any).loadEnvFile === 'function') {
+      try {
+        (process as any).loadEnvFile(envLocalPath);
+        return;
+      } catch {
+        // fallback to manual parse below
+      }
+    }
+    const content = readFileSync(envLocalPath, 'utf-8');
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const idx = trimmed.indexOf('=');
+      if (idx !== -1) {
+        const key = trimmed.slice(0, idx).trim();
+        const value = trimmed.slice(idx + 1).trim();
+        if (!process.env[key]) {
+          process.env[key] = value.replace(/^["']|["']$/g, '');
+        }
+      }
+    }
+  }
+}
+
+loadEnvLocal();
 
 async function seedSupabase() {
   console.log('[Supabase Seeder] Checking Supabase connection...');
@@ -31,6 +63,19 @@ async function seedSupabase() {
   }
 
   console.log('✅ Connected to Supabase. Starting seed...');
+
+  let hasErrors = false;
+
+  function handleError(step: string, error: { message: string }) {
+    hasErrors = true;
+    if (error.message.includes('does not exist')) {
+      console.error(`\n❌ Error during ${step}: Table does not exist in Supabase!`);
+      console.error('👉 ACTION REQUIRED: Run the SQL migration in Supabase SQL Editor first:');
+      console.error('   File: supabase/migrations/20261016_initial_schema.sql\n');
+    } else {
+      console.error(`❌ Failed ${step}:`, error.message);
+    }
+  }
 
   // 1. Seed Office Locations
   console.log('📍 Seeding Office Locations...');
@@ -57,8 +102,17 @@ async function seedSupabase() {
 
   for (const loc of locations) {
     const { error } = await supabase.from('office_locations').upsert(loc, { onConflict: 'id' });
-    if (error) console.error(`Failed to upsert location ${loc.id}:`, error.message);
-    else console.log(`  ✓ Location '${loc.name}' seeded.`);
+    if (error) {
+      handleError(`seeding location '${loc.id}'`, error);
+      break; // stop early if table doesn't exist
+    } else {
+      console.log(`  ✓ Location '${loc.name}' seeded.`);
+    }
+  }
+
+  if (hasErrors) {
+    console.error('\n⚠️ Seeding aborted because database tables have not been created yet in Supabase.');
+    process.exit(1);
   }
 
   // 2. Seed Office Config
@@ -76,7 +130,7 @@ async function seedSupabase() {
   };
 
   const { error: configError } = await supabase.from('office_config').upsert(officeConfig, { onConflict: 'id' });
-  if (configError) console.error('Failed to upsert office config:', configError.message);
+  if (configError) handleError('seeding office config', configError);
   else console.log('  ✓ Office config seeded.');
 
   // 3. Seed Default Admin User
@@ -93,7 +147,7 @@ async function seedSupabase() {
   };
 
   const { error: adminError } = await supabase.from('users').upsert(adminUser, { onConflict: 'email' });
-  if (adminError) console.error('Failed to upsert admin user:', adminError.message);
+  if (adminError) handleError('seeding admin user', adminError);
   else console.log('  ✓ Admin user seeded (admin@ioh.co.id / AdminIOH2026!).');
 
   // 4. Seed Initial Interns
@@ -132,7 +186,7 @@ async function seedSupabase() {
 
   for (const intern of interns) {
     const { error } = await supabase.from('interns').upsert(intern, { onConflict: 'id' });
-    if (error) console.error(`Failed to upsert intern ${intern.id}:`, error.message);
+    if (error) handleError(`seeding intern '${intern.id}'`, error);
     else console.log(`  ✓ Intern '${intern.nama_lengkap}' seeded (${intern.email} / InternIOH2026!).`);
   }
 
@@ -150,10 +204,15 @@ async function seedSupabase() {
   };
 
   const { error: relocError } = await supabase.from('relocation_requests').upsert(relocRequest, { onConflict: 'id' });
-  if (relocError) console.error('Failed to upsert relocation request:', relocError.message);
+  if (relocError) handleError('seeding relocation request', relocError);
   else console.log('  ✓ Sample relocation request seeded.');
 
-  console.log('\n🎉 Supabase seeding completed successfully!');
+  if (hasErrors) {
+    console.error('\n⚠️ Seeding finished with errors. Please check the logs above.');
+    process.exit(1);
+  }
+
+  console.log('\n🎉 Supabase seeding completed successfully! All tables populated.');
 }
 
 seedSupabase().catch((err) => {

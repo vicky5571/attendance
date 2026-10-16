@@ -1,6 +1,13 @@
 import { getDatabase } from '../../../../lib/db/client.ts';
 import { getIntern } from '../../../../lib/db/repo.ts';
 import { findSessionByToken, getUserById } from '../../../../lib/db/auth-repo.ts';
+import { isSupabaseConfigured } from '../../../../lib/supabase/admin.ts';
+import {
+  findSessionByTokenInSupabase,
+  getInternFromSupabase,
+  getUserByUsernameOrEmailFromSupabase,
+} from '../../../../lib/db/supabase-repo.ts';
+import type { SessionRecord } from '../../../../types/index.ts';
 
 function extractToken(req: Request): string | null {
   // 1. From cookie header
@@ -32,8 +39,16 @@ export async function GET(req: Request) {
       );
     }
 
+    let session: SessionRecord | null = null;
+    if (isSupabaseConfigured()) {
+      session = await findSessionByTokenInSupabase(token);
+    }
+
     const db = getDatabase();
-    const session = findSessionByToken(db, token);
+    if (!session) {
+      session = findSessionByToken(db, token);
+    }
+
     if (!session) {
       return Response.json(
         { error: 'Sesi telah berakhir atau tidak valid' },
@@ -42,7 +57,11 @@ export async function GET(req: Request) {
     }
 
     if (session.role === 'INTERN') {
-      const intern = getIntern(db, session.userId);
+      let intern = isSupabaseConfigured() ? await getInternFromSupabase(session.userId) : null;
+      if (!intern) {
+        intern = getIntern(db, session.userId);
+      }
+
       if (!intern) {
         return Response.json(
           { error: 'Profil peserta magang tidak ditemukan' },
@@ -65,7 +84,10 @@ export async function GET(req: Request) {
     }
 
     // Role ADMIN or SUPERVISOR
-    const user = getUserById(db, session.userId);
+    let user = isSupabaseConfigured() ? await getUserByUsernameOrEmailFromSupabase(session.userId) : null;
+    if (!user) {
+      user = getUserById(db, session.userId);
+    }
     if (!user) {
       return Response.json(
         { error: 'Akun pengguna tidak ditemukan' },

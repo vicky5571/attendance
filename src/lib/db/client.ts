@@ -8,8 +8,18 @@ let runtimeDb: DatabaseSync | null = null;
  * Defaults to process.env.DATABASE_PATH or './attendance.db'.
  */
 export function createDatabase(location?: string): DatabaseSync {
-  const dbPath = location || process.env.DATABASE_PATH || './attendance.db';
-  return new DatabaseSync(dbPath);
+  const defaultPath =
+    process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
+      ? '/tmp/attendance.db'
+      : './attendance.db';
+  const dbPath = location || process.env.DATABASE_PATH || defaultPath;
+
+  try {
+    return new DatabaseSync(dbPath);
+  } catch (err) {
+    console.warn(`[SQLite] Could not open '${dbPath}', falling back to in-memory:`, err);
+    return new DatabaseSync(':memory:');
+  }
 }
 
 /**

@@ -313,3 +313,43 @@ export async function createSessionInSupabase(session: SessionRecord): Promise<b
   return !error;
 }
 
+export async function getUserByUsernameOrEmailFromSupabase(identifier: string): Promise<AppUser | null> {
+  const supabase = await getSupabaseAdmin();
+  if (!supabase) return null;
+
+  const clean = identifier.trim();
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .or(`email.ilike.${clean},username.ilike.${clean}`)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    username: data.username || undefined,
+    email: data.email,
+    passwordHash: data.password_hash,
+    role: data.role,
+    name: data.name,
+    createdAt: data.created_at,
+  };
+}
+
+export async function getInternByIdOrEmailFromSupabase(identifier: string): Promise<InternProfile | null> {
+  const supabase = await getSupabaseAdmin();
+  if (!supabase) return null;
+
+  const clean = identifier.trim();
+  const { data, error } = await supabase
+    .from('interns')
+    .select('*')
+    .or(`id.eq.${clean},email.ilike.${clean}`)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return mapInternRow(data);
+}
+
+
